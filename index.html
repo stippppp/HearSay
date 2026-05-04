@@ -84,6 +84,7 @@
 
 
     .hidden { display: none !important; }
+    #nav-brand { display: none; }
     .w-full { width: 100%; }
     .text-center { text-align: center; }
 
@@ -163,7 +164,7 @@
     /* ── Page Header ── */
     .page-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: calc(env(safe-area-inset-top, 16px) + 12px) 20px 16px;
+      padding: 48px 20px 16px;
       background: var(--card);
       box-shadow: 0 2px 8px rgba(26,60,110,.06);
       flex-shrink: 0;
@@ -352,7 +353,7 @@
     /* ── DASHBOARD ── */
     .dash-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: calc(env(safe-area-inset-top, 16px) + 12px) 20px 16px;
+      padding: 48px 20px 16px;
       background: var(--card);
       box-shadow: 0 2px 8px rgba(26,60,110,.06);
       position: relative;
@@ -852,7 +853,6 @@
         flex-shrink: 0;
       }
       #nav-brand svg { flex-shrink: 0; }
-      @media (max-width: 899px) { #nav-brand { display: none !important; } }
       .nav-items {
         flex-direction: column !important;
         align-items: stretch !important;
