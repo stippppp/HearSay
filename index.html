@@ -71,6 +71,11 @@
       }
     }
 
+    /* ── Mobile/Tablet: hide sidebar nav, keep hamburger ── */
+    @media (max-width: 899px) {
+      #bottom-nav { display: none !important; }
+    }
+
     /* ── Desktop (900px+): sidebar nav + main content ── */
     @media (min-width: 900px) {
       body {
@@ -804,6 +809,9 @@
       .dash-title { display: none !important; }
       .dash-header { justify-content: flex-end !important; padding-left: 20px !important; }
     }
+
+    /* ── Misc ── */
+    @media (prefers-color-scheme: dark) { }
   </style>
 </head>
 <body>
