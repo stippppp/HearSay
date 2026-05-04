@@ -324,8 +324,13 @@
       background: var(--card);
       box-shadow: 0 2px 8px rgba(26,60,110,.06);
       flex-shrink: 0;
+      position: relative;
     }
-    .page-title { font-size: 18px; font-weight: 700; color: var(--text); }
+    .page-title {
+      font-size: 18px; font-weight: 700; color: var(--text);
+      position: absolute; left: 50%; transform: translateX(-50%);
+      white-space: nowrap;
+    }
     .icon-btn {
       width: 36px; height: 36px; border: none; background: transparent;
       cursor: pointer; border-radius: 10px;
