@@ -39,6 +39,7 @@
     html, body {
       overflow-x: hidden;
       width: 100%;
+      height: 100%;
     }
 
     body {
@@ -62,6 +63,177 @@
       overflow-x: hidden;
     }
 
+    /* ── Tablet (600–899px): wider card, centered ── */
+    @media (min-width: 600px) {
+      #app {
+        max-width: 520px;
+        box-shadow: 0 0 60px rgba(26,60,110,.18);
+      }
+    }
+
+    /* ── Desktop (900px+): sidebar nav + main content ── */
+    @media (min-width: 900px) {
+      body {
+        align-items: stretch;
+        min-height: 100vh;
+      }
+
+      #app {
+        max-width: 900px;
+        min-height: 100vh;
+        min-height: 100dvh;
+        flex-direction: row;
+        align-items: stretch;
+        overflow: hidden;
+      }
+
+      /* ── Sidebar Nav ── */
+      #bottom-nav {
+        position: sticky !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: auto !important;
+        transform: none !important;
+        width: 220px !important;
+        min-width: 220px !important;
+        max-width: 220px !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        flex-shrink: 0;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        border-top: none !important;
+        border-right: 1px solid var(--border) !important;
+        box-shadow: 2px 0 16px rgba(42,90,160,.08) !important;
+        padding-bottom: 0 !important;
+        overflow-y: auto;
+        z-index: 50 !important;
+      }
+
+      #bottom-nav::before {
+        content: 'HearSay';
+        display: block;
+        padding: 28px 20px 18px;
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--primary);
+        border-bottom: 1px solid var(--border);
+        letter-spacing: -.3px;
+        flex-shrink: 0;
+      }
+
+      .nav-items {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        padding: 14px 10px !important;
+        gap: 2px !important;
+      }
+
+      .nav-item {
+        flex-direction: row !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        padding: 10px 14px !important;
+        border-radius: 12px !important;
+        transition: background .15s;
+        text-align: left;
+      }
+
+      .nav-item:hover { background: var(--bg) !important; }
+      .nav-item.active { background: var(--primary-muted) !important; }
+      .nav-item.active .nav-icon-wrap { background: transparent !important; }
+      .nav-label { font-size: 13px !important; font-weight: 600 !important; }
+      .nav-indicator { display: none !important; }
+      .home-pill { display: none !important; }
+
+      /* ── Main scrollable content area ── */
+      .screen {
+        flex: 1 !important;
+        min-width: 0 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        padding-bottom: 40px !important;
+      }
+
+      /* Landing screen: full width inside content area, no sidebar overlap */
+      .landing-screen {
+        width: 100% !important;
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow-x: hidden;
+      }
+
+      .landing-hero {
+        padding: 60px 48px 36px !important;
+        width: 100%;
+        max-width: 560px;
+        margin: 0 auto;
+        box-sizing: border-box;
+      }
+
+      .landing-h1 { font-size: 40px !important; }
+      .landing-sub { max-width: 360px !important; font-size: 16px !important; }
+
+      /* Features: 2-col grid that stays inside its container */
+      .landing-features {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+        width: 100% !important;
+        flex-direction: unset !important;
+      }
+
+      .landing-feat {
+        flex: unset !important;
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+
+      /* Buttons row */
+      .landing-actions {
+        flex-direction: row !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-bottom: 60px !important;
+      }
+
+      /* Page headers — reduce top padding (no mobile status bar) */
+      .page-header,
+      .dash-header {
+        padding-top: 24px !important;
+      }
+
+      /* Login */
+      .login-header { padding-top: 32px !important; }
+      .login-body { padding: 28px 40px 60px !important; }
+
+      /* Dashboard */
+      .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
+      .cta-card { padding: 24px !important; }
+      .session-setup { padding: 48px 48px !important; }
+
+      /* Delete confirm modal */
+      .del-confirm-box {
+        max-width: 480px !important;
+        border-radius: 20px !important;
+        margin-bottom: 40px !important;
+      }
+    }
+
+    /* ── Large desktop (1200px+) ── */
+    @media (min-width: 1200px) {
+      #app { max-width: 1100px !important; }
+      #bottom-nav {
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
+      }
+    }
+
     .hidden { display: none !important; }
     .w-full { width: 100%; }
     .text-center { text-align: center; }
@@ -76,6 +248,13 @@
       animation: fadeUp .22s ease-out;
     }
     .screen.no-pad { padding-bottom: 0; }
+
+    /* On desktop the nav is a sidebar, not a bottom bar — remove bottom padding */
+    @media (min-width: 900px) {
+      .screen {
+        padding-bottom: 40px !important;
+      }
+    }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(8px); }
@@ -155,7 +334,7 @@
     .input-label { font-size: 13px; font-weight: 600; color: var(--primary); }
     .input {
       width: 100%; padding: 14px 16px; border-radius: var(--radius);
-      border: 1.5px solid var(--border); background: #f4f8fd;
+      border: 1.5px solid var(--border); background: var(--input-bg, #f4f8fd);
       font-family: var(--font); font-size: 14px; color: var(--text);
       outline: none; transition: border-color .15s, box-shadow .15s;
     }
@@ -269,6 +448,10 @@
       background: var(--grad-header);
       position: relative;
       gap: 0;
+    }
+
+    @media (min-width: 900px) {
+      .login-header { padding: 32px 20px 28px; }
     }
     .login-logo {
       width: 48px; height: 48px; border-radius: 16px;
@@ -598,16 +781,19 @@
     .toggle input:checked ~ .toggle-track { background: var(--primary); }
     .toggle input:checked ~ .toggle-track::before { transform: translateX(22px); }
 
-    .font-control { display: flex; align-items: center; gap: 4px; background: #f0f6fd; border-radius: 10px; padding: 6px 10px; border: 1px solid var(--border); }
+    .font-control { display: flex; align-items: center; gap: 4px; background: var(--input-bg, #f0f6fd); border-radius: 10px; padding: 6px 10px; border: 1px solid var(--border); }
     .font-btn { background: none; border: none; cursor: pointer; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 700; color: var(--primary); transition: background .12s; font-family: var(--font); }
     .font-btn:hover { background: var(--primary-muted); }
     .font-val { font-size: 11px; color: var(--text-muted); padding: 0 4px; min-width: 32px; text-align: center; }
 
     .lang-select {
-      background: #f0f6fd; border: 1px solid var(--border); border-radius: 10px;
-      padding: 7px 12px; font-size: 13px; font-weight: 700; color: var(--primary);
+      background: var(--input-bg, #f0f6fd); border: 1px solid var(--border); border-radius: 10px;
+      padding: 7px 12px; font-size: 13px; font-weight: 700; color: var(--text);
       outline: none; cursor: pointer; font-family: var(--font);
     }
+
+    /* Also fix settings-row hover in dark mode */
+    .settings-row.clickable:hover { background: var(--bg) !important; }
 
     .pw-panel { background: var(--bg); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     .apikey-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
@@ -874,6 +1060,7 @@ function applySettings() {
     root.style.setProperty('--primary-light', '#93c5fd');
     root.style.setProperty('--primary-lighter', '#bfdbfe');
     root.style.setProperty('--primary-muted', '#1e3a5f');
+    root.style.setProperty('--input-bg', '#111827');
     document.body.style.background = '#0f172a';
   } else {
     root.style.setProperty('--bg', '#eef3fb');
@@ -885,6 +1072,7 @@ function applySettings() {
     root.style.setProperty('--primary-light', '#2d5f9e');
     root.style.setProperty('--primary-lighter', '#4a90d9');
     root.style.setProperty('--primary-muted', '#d0e8f8');
+    root.style.setProperty('--input-bg', '#f4f8fd');
     document.body.style.background = '#c8daf2';
   }
 
@@ -954,7 +1142,10 @@ function openMenuDrawer() {
   overlay.innerHTML = `
     <div style="width:260px;background:var(--card);height:100%;display:flex;flex-direction:column;padding:0;box-shadow:4px 0 24px rgba(0,0,0,.18);animation:slideInLeft .22s ease-out">
       <div style="background:var(--grad-header);padding:48px 20px 20px;display:flex;flex-direction:column;gap:8px">
-        <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center">${escHtml(S.user?.avatar||'?')}</div>
+        ${S.user?.profilePic
+          ? `<img src="${S.user.profilePic}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.3)"/>`
+          : `<div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.3);color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center">${escHtml(S.user?.avatar||'?')}</div>`
+        }
         <div style="color:#fff;font-size:15px;font-weight:700;margin-top:4px">${escHtml(S.user?.name||'Student')}</div>
         <div style="color:rgba(160,200,255,.85);font-size:12px">${escHtml(S.user?.course||'')}</div>
       </div>
@@ -1501,7 +1692,13 @@ function renderSettings() {
           <div class="settings-row">
             <span class="settings-row-label">Language</span>
             <select class="lang-select" id="sel-lang">
-              ${['English','Filipino','Spanish','French','Japanese','Chinese'].map(l=>`<option${language===l?' selected':''}>${l}</option>`).join('')}
+              ${[
+                'English','Filipino','Cebuano','Ilocano',
+                'Spanish','French','Portuguese','Italian','German','Dutch',
+                'Japanese','Chinese (Simplified)','Chinese (Traditional)',
+                'Korean','Vietnamese','Thai','Indonesian','Malay','Hindi',
+                'Arabic','Russian','Polish','Turkish','Bengali','Swahili'
+              ].map(l=>`<option${language===l?' selected':''}>${l}</option>`).join('')}
             </select>
           </div>
           <div class="settings-row">
@@ -1928,7 +2125,33 @@ function startRecognition() {
   // Don't abort existing — let it finish naturally to avoid onend loop
   if (LS.recognition) return;
 
-  const langMap = { Filipino:'fil-PH', Spanish:'es-ES', French:'fr-FR', Japanese:'ja-JP', Chinese:'zh-CN' };
+  const langMap = {
+    'English':              'en-US',
+    'Filipino':             'fil-PH',
+    'Cebuano':              'ceb-PH',
+    'Ilocano':              'ilo-PH',
+    'Spanish':              'es-ES',
+    'French':               'fr-FR',
+    'Portuguese':           'pt-BR',
+    'Italian':              'it-IT',
+    'German':               'de-DE',
+    'Dutch':                'nl-NL',
+    'Japanese':             'ja-JP',
+    'Chinese (Simplified)': 'zh-CN',
+    'Chinese (Traditional)':'zh-TW',
+    'Korean':               'ko-KR',
+    'Vietnamese':           'vi-VN',
+    'Thai':                 'th-TH',
+    'Indonesian':           'id-ID',
+    'Malay':                'ms-MY',
+    'Hindi':                'hi-IN',
+    'Arabic':               'ar-SA',
+    'Russian':              'ru-RU',
+    'Polish':               'pl-PL',
+    'Turkish':              'tr-TR',
+    'Bengali':              'bn-BD',
+    'Swahili':              'sw-KE',
+  };
   const r = new SR();
   r.continuous      = true;
   r.interimResults  = true;
