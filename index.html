@@ -1365,6 +1365,8 @@ function bindNav() {
   document.querySelectorAll('[data-nav]').forEach(b => b.addEventListener('click', () => {
     const k = b.dataset.nav;
     const map = { home:'dashboard', session:'session', summaries:'summaries', profile:'profile', settings:'settings' };
+    // If tapping Notes while already viewing a session detail, stay on it
+    if (k === 'summaries' && S.screen === 'session-detail') return;
     go(map[k], { tab: k });
   }));
 }
@@ -1696,7 +1698,7 @@ function menuBtn() {
 const openCards = {};
 function renderSummaries(filterId) {
   const list = filterId ? S.sessions.filter(s=>s.id===filterId) : S.sessions;
-  const backTarget = filterId ? (S.prevScreen === 'summaries' ? 'summaries' : 'dashboard') : null;
+  const backTarget = filterId ? 'summaries' : null;
   const backBtn = filterId
     ? `<button class="icon-btn" id="btn-sum-back">${ic('i-back',20,20)}</button>`
     : `<div style="width:36px"></div>`;
@@ -2570,7 +2572,7 @@ async function endSession() {
 
   S.sessions.unshift(session);
   openCards[session.id] = { open: true, tab: 'summary' };
-  go('session-detail', { sid: session.id });
+  go('summaries', { tab: 'summaries' });
 
   // Save to Supabase in background
   if (S.user?.id) {
