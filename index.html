@@ -1430,8 +1430,15 @@ function renderResetPassword() {
       <div class="input-group">
         <label class="input-label" for="rp-new">New Password</label>
         <div class="input-wrap">
-          <input id="rp-new" class="input" type="password" placeholder="At least 6 characters" style="padding-right:46px" autocomplete="new-password"/>
+          <input id="rp-new" class="input" type="password" placeholder="At least 8 characters" style="padding-right:46px" autocomplete="new-password"/>
           <button class="input-eye" id="rp-eye" type="button">${ic('i-eye',16,16)}</button>
+        </div>
+        <div id="rp-strength" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+          <div class="pw-rule" id="rp-rule-len" data-label="At least 8 characters"></div>
+          <div class="pw-rule" id="rp-rule-up"  data-label="One uppercase letter (A–Z)"></div>
+          <div class="pw-rule" id="rp-rule-low" data-label="One lowercase letter (a–z)"></div>
+          <div class="pw-rule" id="rp-rule-num" data-label="One number (0–9)"></div>
+          <div class="pw-rule" id="rp-rule-sym" data-label="One special character (!@#$…)"></div>
         </div>
       </div>
       <div class="input-group">
@@ -1910,13 +1917,34 @@ function bindEvents() {
   /* RESET PASSWORD */
   if (s === 'reset-password') {
     $('rp-eye')?.addEventListener('click', () => toggleEye('rp-new','rp-eye'));
+    // Live criteria checker for reset password
+    const rpRules = {
+      'rp-rule-len': () => ($('rp-new')?.value||'').length >= 8,
+      'rp-rule-up':  () => /[A-Z]/.test($('rp-new')?.value||''),
+      'rp-rule-low': () => /[a-z]/.test($('rp-new')?.value||''),
+      'rp-rule-num': () => /[0-9]/.test($('rp-new')?.value||''),
+      'rp-rule-sym': () => /[^A-Za-z0-9]/.test($('rp-new')?.value||''),
+    };
+    // Initialize labels
+    Object.entries(rpRules).forEach(([id]) => {
+      const el = $(id); if (el) el.textContent = el.dataset.label;
+    });
+    $('rp-new')?.addEventListener('input', () => {
+      Object.entries(rpRules).forEach(([id, check]) => {
+        const el = $(id); if (el) el.classList.toggle('met', check());
+      });
+    });
     $('btn-rp-submit')?.addEventListener('click', async () => {
       const np  = ($('rp-new')?.value     || '');
       const cp  = ($('rp-confirm')?.value || '');
       const msg = $('rp-msg');
       hideMsg(msg);
-      if (np.length < 6) return showMsg(msg, 'Password must be at least 6 characters.');
-      if (np !== cp)     return showMsg(msg, 'Passwords do not match.');
+      if (np.length < 8)              return showMsg(msg, 'Password must be at least 8 characters.');
+      if (!/[A-Z]/.test(np))          return showMsg(msg, 'Password must contain at least one uppercase letter.');
+      if (!/[a-z]/.test(np))          return showMsg(msg, 'Password must contain at least one lowercase letter.');
+      if (!/[0-9]/.test(np))          return showMsg(msg, 'Password must contain at least one number.');
+      if (!/[^A-Za-z0-9]/.test(np))   return showMsg(msg, 'Password must contain at least one special character.');
+      if (np !== cp)                   return showMsg(msg, 'Passwords do not match.');
       const btn = $('btn-rp-submit');
       if (btn) { btn.textContent = 'Updating…'; btn.disabled = true; }
       try {
