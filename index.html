@@ -36,6 +36,11 @@
       --font:           'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
 
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+    }
+
     body {
       font-family: var(--font);
       background: #c8daf2;
@@ -49,10 +54,12 @@
       width: 100%;
       max-width: 430px;
       min-height: 100vh;
+      min-height: 100dvh;
       background: var(--bg);
       position: relative;
       display: flex;
       flex-direction: column;
+      overflow-x: hidden;
     }
 
     .hidden { display: none !important; }
@@ -64,7 +71,8 @@
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      padding-bottom: 90px;
+      overflow-x: hidden;
+      padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
       animation: fadeUp .22s ease-out;
     }
     .screen.no-pad { padding-bottom: 0; }
@@ -87,6 +95,7 @@
       box-shadow: var(--shadow-nav);
       border-top: 1px solid var(--border);
       z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     .nav-items { display: flex; align-items: center; justify-content: space-around; padding: 6px 4px 0; }
     .nav-item {
@@ -255,24 +264,26 @@
 
     /* ── LOGIN ── */
     .login-header {
-      display: flex; align-items: center; gap: 16px;
-      padding: 56px 32px 32px;
+      display: flex; align-items: center;
+      padding: 52px 20px 28px;
       background: var(--grad-header);
+      position: relative;
+      gap: 0;
     }
     .login-logo {
-      width: 52px; height: 52px; border-radius: 16px;
+      width: 48px; height: 48px; border-radius: 16px;
       background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.25);
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .login-logo svg { stroke: #fff; width: 26px; height: 26px; }
-    .login-brand-name { font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -.5px; }
-    .login-brand-sub { font-size: 13px; color: rgba(160,200,255,.85); margin-top: 2px; }
+    .login-logo svg { stroke: #fff; width: 24px; height: 24px; }
+    .login-brand-name { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -.5px; }
+    .login-brand-sub { font-size: 12px; color: rgba(160,200,255,.85); margin-top: 2px; }
     .login-back {
-      position: absolute; left: 20px; top: 52px;
+      width: 34px; height: 34px; flex-shrink: 0;
       background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
-      border-radius: 10px; width: 34px; height: 34px;
+      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
+      cursor: pointer; margin-right: 12px;
     }
     .login-back svg { stroke: #fff; width: 18px; height: 18px; }
 
@@ -1124,8 +1135,8 @@ function renderLogin() {
   return `<div class="screen no-pad" style="position:relative">
     <div class="login-header" style="position:relative">
       <button class="login-back" id="btn-login-back">${ic('i-back',18,18)}</button>
-      <div style="display:flex;align-items:center;gap:16px;width:100%;justify-content:center">
-        <div class="login-logo">${ic('i-mic',26,26)}</div>
+      <div style="display:flex;align-items:center;gap:12px;flex:1">
+        <div class="login-logo">${ic('i-mic',24,24)}</div>
         <div>
           <div class="login-brand-name">HearSay</div>
           <div class="login-brand-sub">Real-time classroom transcription</div>
