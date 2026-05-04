@@ -798,8 +798,12 @@
     .pw-panel { background: var(--bg); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     .apikey-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
 
-    /* ── Misc ── */
-    @media (prefers-color-scheme: dark) { }
+    /* ── Hide desktop-redundant elements ── */
+    @media (min-width: 900px) {
+      #btn-menu-open { display: none !important; }
+      .dash-title { display: none !important; }
+      .dash-header { justify-content: flex-end !important; padding-left: 20px !important; }
+    }
   </style>
 </head>
 <body>
