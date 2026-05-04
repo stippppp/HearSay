@@ -71,9 +71,10 @@
       }
     }
 
-    /* ── Mobile/Tablet: hide sidebar nav, keep hamburger ── */
+    /* ── Mobile/Tablet: show bottom nav, hide hamburger ── */
     @media (max-width: 899px) {
-      #bottom-nav { display: none !important; }
+      #bottom-nav { display: block !important; }
+      #btn-menu-open { display: none !important; }
     }
 
     /* ── Desktop (900px+): sidebar nav + main content ── */
@@ -803,11 +804,21 @@
     .pw-panel { background: var(--bg); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     .apikey-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
 
-    /* ── Hide desktop-redundant elements ── */
+    /* ── Hide desktop sidebar, show only hamburger drawer ── */
     @media (min-width: 900px) {
-      #btn-menu-open { display: none !important; }
-      .dash-title { display: none !important; }
-      .dash-header { justify-content: flex-end !important; padding-left: 20px !important; }
+      #bottom-nav { display: none !important; }
+      #btn-menu-open { display: flex !important; }
+      .dash-title { display: block !important; }
+      .dash-header { justify-content: space-between !important; }
+      #app {
+        flex-direction: column !important;
+        max-width: 900px !important;
+      }
+      .screen {
+        padding-bottom: 40px !important;
+        height: auto !important;
+        min-height: 100vh !important;
+      }
     }
 
     /* ── Misc ── */
