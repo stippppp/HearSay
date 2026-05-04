@@ -63,182 +63,25 @@
       overflow-x: hidden;
     }
 
-    /* ── Tablet (600–899px): wider card, centered ── */
-    @media (min-width: 600px) {
-      #app {
-        max-width: 520px;
-        box-shadow: 0 0 60px rgba(26,60,110,.18);
-      }
+    /* Tablet: slightly wider */
+    @media (min-width: 600px) and (max-width: 899px) {
+      #app { max-width: 560px; box-shadow: 0 0 60px rgba(26,60,110,.18); }
     }
 
-    /* ── Mobile/Tablet: show bottom nav, hide hamburger ── */
+    /* UID input wrapper focus style */
+    #uid-wrap:focus-within,
+    #l-uid-wrap:focus-within {
+      border-color: var(--primary-lighter) !important;
+      box-shadow: 0 0 0 3px rgba(74,144,217,.15) !important;
+    }
+
+    /* Mobile/Tablet: show bottom nav */
     @media (max-width: 899px) {
       #bottom-nav { display: block !important; }
       #btn-menu-open { display: none !important; }
     }
 
-    /* ── Desktop (900px+): sidebar nav + main content ── */
-    @media (min-width: 900px) {
-      body {
-        align-items: stretch;
-        min-height: 100vh;
-      }
 
-      #app {
-        max-width: 900px;
-        min-height: 100vh;
-        min-height: 100dvh;
-        flex-direction: row;
-        align-items: stretch;
-        overflow: hidden;
-      }
-
-      /* ── Sidebar Nav ── */
-      #bottom-nav {
-        position: sticky !important;
-        top: 0 !important;
-        left: 0 !important;
-        bottom: auto !important;
-        transform: none !important;
-        width: 220px !important;
-        min-width: 220px !important;
-        max-width: 220px !important;
-        height: 100vh !important;
-        height: 100dvh !important;
-        flex-shrink: 0;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: flex-start !important;
-        border-top: none !important;
-        border-right: 1px solid var(--border) !important;
-        box-shadow: 2px 0 16px rgba(42,90,160,.08) !important;
-        padding-bottom: 0 !important;
-        overflow-y: auto;
-        z-index: 50 !important;
-      }
-
-      #bottom-nav::before {
-        content: 'HearSay';
-        display: block;
-        padding: 28px 20px 18px;
-        font-size: 18px;
-        font-weight: 800;
-        color: var(--primary);
-        border-bottom: 1px solid var(--border);
-        letter-spacing: -.3px;
-        flex-shrink: 0;
-      }
-
-      .nav-items {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        justify-content: flex-start !important;
-        padding: 14px 10px !important;
-        gap: 2px !important;
-      }
-
-      .nav-item {
-        flex-direction: row !important;
-        justify-content: flex-start !important;
-        gap: 12px !important;
-        padding: 10px 14px !important;
-        border-radius: 12px !important;
-        transition: background .15s;
-        text-align: left;
-      }
-
-      .nav-item:hover { background: var(--bg) !important; }
-      .nav-item.active { background: var(--primary-muted) !important; }
-      .nav-item.active .nav-icon-wrap { background: transparent !important; }
-      .nav-label { font-size: 13px !important; font-weight: 600 !important; }
-      .nav-indicator { display: none !important; }
-      .home-pill { display: none !important; }
-
-      /* ── Main scrollable content area ── */
-      .screen {
-        flex: 1 !important;
-        min-width: 0 !important;
-        height: 100vh !important;
-        height: 100dvh !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        padding-bottom: 40px !important;
-      }
-
-      /* Landing screen: full width inside content area, no sidebar overlap */
-      .landing-screen {
-        width: 100% !important;
-        min-height: 100vh;
-        min-height: 100dvh;
-        overflow-x: hidden;
-      }
-
-      .landing-hero {
-        padding: 60px 48px 36px !important;
-        width: 100%;
-        max-width: 560px;
-        margin: 0 auto;
-        box-sizing: border-box;
-      }
-
-      .landing-h1 { font-size: 40px !important; }
-      .landing-sub { max-width: 360px !important; font-size: 16px !important; }
-
-      /* Features: 2-col grid that stays inside its container */
-      .landing-features {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 10px !important;
-        width: 100% !important;
-        flex-direction: unset !important;
-      }
-
-      .landing-feat {
-        flex: unset !important;
-        width: 100% !important;
-        min-width: 0 !important;
-      }
-
-      /* Buttons row */
-      .landing-actions {
-        flex-direction: row !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        padding-bottom: 60px !important;
-      }
-
-      /* Page headers — reduce top padding (no mobile status bar) */
-      .page-header,
-      .dash-header {
-        padding-top: 24px !important;
-      }
-
-      /* Login */
-      .login-header { padding-top: 32px !important; }
-      .login-body { padding: 28px 40px 60px !important; }
-
-      /* Dashboard */
-      .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
-      .cta-card { padding: 24px !important; }
-      .session-setup { padding: 48px 48px !important; }
-
-      /* Delete confirm modal */
-      .del-confirm-box {
-        max-width: 480px !important;
-        border-radius: 20px !important;
-        margin-bottom: 40px !important;
-      }
-    }
-
-    /* ── Large desktop (1200px+) ── */
-    @media (min-width: 1200px) {
-      #app { max-width: 1100px !important; }
-      #bottom-nav {
-        width: 260px !important;
-        min-width: 260px !important;
-        max-width: 260px !important;
-      }
-    }
 
     .hidden { display: none !important; }
     .w-full { width: 100%; }
@@ -490,7 +333,21 @@
     .login-tab.active { background: var(--card); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,.1); }
     #tab-login.active { border-radius: 0 16px 0 0; }
     #tab-register.active { border-radius: 16px 0 0 0; }
-    .login-body { background: var(--card); flex: 1; padding: 24px 24px 48px; display: flex; flex-direction: column; gap: 16px; }
+    .login-body { background: var(--card); flex: 1; padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* On desktop, login/register wraps in a centered card look */
+    @media (min-width: 900px) {
+      .login-screen-wrap {
+        display: flex; align-items: flex-start; justify-content: center;
+        flex: 1; background: var(--bg); padding: 40px 24px 60px;
+      }
+      .login-card {
+        width: 100%; max-width: 480px;
+        background: var(--card); border-radius: 20px;
+        box-shadow: 0 8px 40px rgba(26,60,110,.14);
+        overflow: hidden;
+      }
+    }
 
     /* ── DASHBOARD ── */
     .dash-header {
@@ -806,24 +663,253 @@
     /* Also fix settings-row hover in dark mode */
     .settings-row.clickable:hover { background: var(--bg) !important; }
 
+    /* ── Terms & Conditions ── */
+    .tnc-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; background: var(--bg);
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+    }
+    .tnc-checkbox {
+      width: 18px; height: 18px; flex-shrink: 0;
+      border: 2px solid var(--border); border-radius: 5px;
+      background: var(--card); cursor: pointer;
+      appearance: none; -webkit-appearance: none;
+      transition: all .15s; position: relative;
+    }
+    .tnc-checkbox:checked {
+      background: var(--primary); border-color: var(--primary);
+    }
+    .tnc-checkbox:checked::after {
+      content: '';
+      position: absolute; left: 4px; top: 1px;
+      width: 6px; height: 10px;
+      border: 2.5px solid #fff; border-top: none; border-left: none;
+      transform: rotate(42deg);
+    }
+    .tnc-checkbox:disabled {
+      opacity: .4; cursor: not-allowed;
+    }
+    .tnc-label {
+      font-size: 12.5px; color: var(--text-muted); line-height: 1.5; flex: 1;
+    }
+    .tnc-label .tnc-link {
+      color: var(--primary-lighter); font-weight: 700;
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font); font-size: 12.5px;
+      text-decoration: underline; padding: 0;
+    }
+    .tnc-link:hover { color: var(--primary); }
+    .tnc-unread-hint {
+      font-size: 11px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 2px; font-style: italic;
+    }
+
+    /* T&C Modal */
+    .tnc-modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,.5);
+      display: flex; align-items: flex-end; justify-content: center;
+      animation: fadeIn .18s ease-out;
+    }
+    .tnc-modal {
+      background: var(--card);
+      border-radius: 24px 24px 0 0;
+      width: 100%; max-width: 430px;
+      max-height: 82vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      animation: slideUpModal .22s ease-out;
+    }
+    @keyframes slideUpModal {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .tnc-modal-header {
+      padding: 20px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .tnc-modal-title { font-size: 16px; font-weight: 800; color: var(--text); }
+    .tnc-modal-close {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bg); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tnc-modal-close svg { stroke: var(--text-muted); width: 16px; height: 16px; }
+    .tnc-modal-body {
+      flex: 1; overflow-y: auto; padding: 20px;
+      font-size: 13px; color: var(--text-muted); line-height: 1.75;
+    }
+    .tnc-modal-body h3 {
+      font-size: 13px; font-weight: 800; color: var(--text);
+      margin: 16px 0 6px; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .tnc-modal-body h3:first-child { margin-top: 0; }
+    .tnc-modal-body p { margin-bottom: 8px; }
+    .tnc-modal-footer {
+      padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid var(--border); flex-shrink: 0;
+    }
+    .tnc-read-indicator {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11.5px; color: var(--text-muted); margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .tnc-read-indicator .tnc-read-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); flex-shrink: 0; transition: background .3s;
+    }
+    .tnc-read-indicator.read .tnc-read-dot { background: var(--success); }
+    .tnc-read-indicator.read { color: var(--success); }
+
     .pw-panel { background: var(--bg); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
     .apikey-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
 
-    /* ── Hide desktop sidebar, show only hamburger drawer ── */
+    /* Password strength rules */
+    .pw-rule {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12.5px; font-weight: 500; color: var(--text-muted);
+      transition: color .2s;
+    }
+    .pw-rule::before {
+      content: '';
+      width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      transition: all .2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pw-rule.met {
+      color: #2e7d32;
+      font-weight: 600;
+    }
+    .pw-rule.met::before {
+      background: #2e7d32;
+      border-color: #2e7d32;
+      /* checkmark via background SVG */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 10px 10px;
+    }
+
+    /* ── Desktop (900px+): full-width layout with sidebar ── */
     @media (min-width: 900px) {
-      #bottom-nav { display: none !important; }
-      #btn-menu-open { display: flex !important; }
-      .desktop-menu-btn { display: flex !important; }
-      .dash-title { display: block !important; }
-      .dash-header { justify-content: space-between !important; }
-      #app {
-        flex-direction: column !important;
-        max-width: 900px !important;
+      body {
+        background: var(--bg);
       }
+      #app {
+        max-width: 100% !important;
+        flex-direction: row !important;
+        align-items: stretch !important;
+        box-shadow: none !important;
+      }
+      #bottom-nav {
+        position: sticky !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: auto !important;
+        transform: none !important;
+        width: 240px !important;
+        min-width: 240px !important;
+        max-width: 240px !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        flex-shrink: 0;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        border-top: none !important;
+        border-right: 1px solid var(--border) !important;
+        box-shadow: 2px 0 16px rgba(42,90,160,.08) !important;
+        padding-bottom: 0 !important;
+        overflow-y: auto;
+        z-index: 50 !important;
+        background: var(--card) !important;
+      }
+      #bottom-nav::before {
+        content: 'HearSay';
+        display: block;
+        padding: 28px 20px 18px;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--primary);
+        border-bottom: 1px solid var(--border);
+        letter-spacing: -.3px;
+        flex-shrink: 0;
+      }
+      .nav-items {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        padding: 14px 10px !important;
+        gap: 4px !important;
+      }
+      .nav-item {
+        flex-direction: row !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        padding: 12px 14px !important;
+        border-radius: 12px !important;
+        transition: background .15s;
+        text-align: left;
+      }
+      .nav-item:hover { background: var(--bg) !important; }
+      .nav-item.active { background: var(--primary-muted) !important; }
+      .nav-item.active .nav-icon-wrap { background: transparent !important; }
+      .nav-label { font-size: 14px !important; font-weight: 600 !important; }
+      .nav-indicator { display: none !important; }
+      .home-pill { display: none !important; }
+      #btn-menu-open { display: none !important; }
+      .desktop-menu-btn { display: none !important; }
       .screen {
+        flex: 1 !important;
+        min-width: 0 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
         padding-bottom: 40px !important;
         height: auto !important;
         min-height: 100vh !important;
+      }
+      .landing-screen {
+        width: 100% !important;
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      .landing-hero {
+        padding: 60px 60px 48px !important;
+        max-width: 700px;
+        margin: 0 auto;
+      }
+      .landing-h1 { font-size: 44px !important; }
+      .landing-sub { max-width: 440px !important; font-size: 17px !important; }
+      .landing-features {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px !important;
+        width: 100% !important;
+      }
+      .landing-actions {
+        flex-direction: row !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-bottom: 60px !important;
+      }
+      .page-header, .dash-header { padding-top: 24px !important; }
+      .login-header { padding-top: 32px !important; }
+      .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
+      .session-setup { padding: 48px 60px !important; max-width: 700px; margin: 0 auto; width: 100%; }
+      .del-confirm-box { max-width: 480px !important; border-radius: 20px !important; }
+    }
+    @media (min-width: 1200px) {
+      #bottom-nav {
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
       }
     }
 
@@ -1071,12 +1157,20 @@ function fmtTime(s) {
 }
 function applySettings() {
   const root = document.documentElement;
-  // Font size — only apply to content/body text, not inputs or structural elements
   const fs = S.settings.fontSize || 16;
-  root.style.setProperty('--user-font-size', fs + 'px');
-  document.querySelectorAll('.sum-text, .si-subject, .si-dur, .settings-row-label, .greeting p, .stat-label, .profile-course, .profile-name, .section-title').forEach(el => {
-    el.style.fontSize = fs + 'px';
-  });
+
+  // Inject or update a persistent <style> for user font size so it survives re-renders
+  let fsStyle = document.getElementById('hs-font-style');
+  if (!fsStyle) {
+    fsStyle = document.createElement('style');
+    fsStyle.id = 'hs-font-style';
+    document.head.appendChild(fsStyle);
+  }
+  fsStyle.textContent = `
+    .sum-text, .si-subject, .si-dur, .settings-row-label,
+    .greeting p, .stat-label, .profile-course, .profile-name,
+    .section-title, .trans-body, .transcript-body { font-size: ${fs}px !important; }
+  `;
 
   // Dark mode
   if (S.settings.darkMode) {
@@ -1105,22 +1199,23 @@ function applySettings() {
     document.body.style.background = '#c8daf2';
   }
 
-  // High contrast — increase text weight and border visibility
+  // High contrast — injected as persistent style
+  let hcStyle = document.getElementById('hs-hc-style');
+  if (!hcStyle) {
+    hcStyle = document.createElement('style');
+    hcStyle.id = 'hs-hc-style';
+    document.head.appendChild(hcStyle);
+  }
   if (S.settings.highContrast) {
     root.style.setProperty('--text', S.settings.darkMode ? '#ffffff' : '#000000');
     root.style.setProperty('--text-muted', S.settings.darkMode ? '#d1d5db' : '#333333');
     root.style.setProperty('--border', S.settings.darkMode ? '#6b7280' : '#1a3c6e');
-    root.style.filter = '';
-    document.body.style.filter = '';
-    document.querySelectorAll('.sum-text, .si-subject, .settings-row-label, .greeting h2').forEach(el => {
-      el.style.fontWeight = '800';
-    });
+    hcStyle.textContent = `
+      .sum-text, .si-subject, .settings-row-label, .greeting h2,
+      .profile-name, .section-title, .transcript-body { font-weight: 800 !important; }
+    `;
   } else {
-    root.style.filter = '';
-    document.body.style.filter = '';
-    document.querySelectorAll('.sum-text, .si-subject, .settings-row-label').forEach(el => {
-      el.style.fontWeight = '';
-    });
+    hcStyle.textContent = '';
   }
 }
 function escHtml(s) {
@@ -1352,7 +1447,9 @@ function renderResetPassword() {
 /* ── LOGIN ── */
 let loginTab = 'login';
 function renderLogin() {
-  return `<div class="screen no-pad" style="position:relative">
+  return `<div class="screen no-pad" style="position:relative;background:var(--bg)">
+    <div class="login-screen-wrap">
+    <div class="login-card" style="width:100%">
     <div class="login-header" style="position:relative">
       <button class="login-back" id="btn-login-back">${ic('i-back',18,18)}</button>
       <div style="display:flex;align-items:center;gap:12px;flex:1">
@@ -1370,8 +1467,11 @@ function renderLogin() {
     <div class="login-body">
       ${loginTab === 'login' ? `
         <div class="input-group">
-          <label class="input-label" for="l-email">Email</label>
-          <input id="l-email" class="input" type="email" placeholder="studentid@gordoncollege.edu.ph" autocomplete="email" />
+          <label class="input-label" for="l-uid">Student ID</label>
+          <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--input-bg,#f4f8fd);overflow:hidden;transition:border-color .15s,box-shadow .15s" id="l-uid-wrap">
+            <input id="l-uid" class="input" type="text" placeholder="studentid" autocomplete="username" style="border:none;background:transparent;border-radius:0;flex:1;min-width:0;padding-right:4px" maxlength="30" />
+            <span style="font-size:13px;font-weight:600;color:var(--text-muted);padding-right:12px;white-space:nowrap;user-select:none">@gordoncollege.edu.ph</span>
+          </div>
         </div>
         <div class="input-group">
           <label class="input-label" for="l-pw">Password</label>
@@ -1388,15 +1488,18 @@ function renderLogin() {
       ` : `
         <div class="input-group">
           <label class="input-label" for="r-name">Full Name</label>
-          <input id="r-name" class="input" type="text" placeholder="Your full name" autocomplete="name" />
+          <input id="r-name" class="input" type="text" placeholder="Your full name" autocomplete="name" maxlength="60" />
         </div>
         <div class="input-group">
-          <label class="input-label" for="r-email">Email</label>
-          <input id="r-email" class="input" type="email" placeholder="studentid@gordoncollege.edu.ph" autocomplete="email" />
+          <label class="input-label" for="r-uid">Student ID</label>
+          <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--input-bg,#f4f8fd);overflow:hidden;transition:border-color .15s,box-shadow .15s" id="uid-wrap">
+            <input id="r-uid" class="input" type="text" placeholder="studentid" autocomplete="username" style="border:none;background:transparent;border-radius:0;flex:1;min-width:0;padding-right:4px" maxlength="30" />
+            <span style="font-size:13px;font-weight:600;color:var(--text-muted);padding-right:12px;white-space:nowrap;user-select:none">@gordoncollege.edu.ph</span>
+          </div>
         </div>
         <div class="input-group">
           <label class="input-label" for="r-course">Course</label>
-          <input id="r-course" class="input" type="text" placeholder="e.g. BSCS" />
+          <input id="r-course" class="input" type="text" placeholder="e.g. BSCS" oninput="this.value=this.value.replace(/[^a-zA-Z\s\-]/g,'')" maxlength="20" />
         </div>
         <div class="input-group">
           <label class="input-label" for="r-section">Section</label>
@@ -1405,17 +1508,37 @@ function renderLogin() {
         <div class="input-group">
           <label class="input-label" for="r-pw">Password</label>
           <div class="input-wrap">
-            <input id="r-pw" class="input" type="password" placeholder="At least 6 characters" autocomplete="new-password" style="padding-right:46px"/>
+            <input id="r-pw" class="input" type="password" placeholder="Create a strong password" autocomplete="new-password" style="padding-right:46px"/>
             <button class="input-eye" id="r-eye" type="button">${ic('i-eye',16,16)}</button>
+          </div>
+          <div id="pw-strength" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+            <div class="pw-rule" id="rule-len"  data-label="At least 8 characters"></div>
+            <div class="pw-rule" id="rule-up"   data-label="One uppercase letter (A–Z)"></div>
+            <div class="pw-rule" id="rule-low"  data-label="One lowercase letter (a–z)"></div>
+            <div class="pw-rule" id="rule-num"  data-label="One number (0–9)"></div>
+            <div class="pw-rule" id="rule-sym"  data-label="One special character (!@#$…)"></div>
           </div>
         </div>
         <div class="input-group">
           <label class="input-label" for="r-pw2">Confirm Password</label>
           <input id="r-pw2" class="input" type="password" placeholder="Re-enter your password" autocomplete="new-password" />
         </div>
+        <div class="tnc-row">
+          <input type="checkbox" class="tnc-checkbox" id="tnc-check" disabled />
+          <div class="tnc-label">
+            I have read and agree to the
+            <button class="tnc-link" id="btn-open-tnc" type="button">Terms and Conditions</button>
+            <div class="tnc-unread-hint" id="tnc-hint">
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" style="stroke:var(--text-muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0"><circle cx="5.5" cy="5.5" r="4.5"/><line x1="5.5" y1="3.5" x2="5.5" y2="5.5"/><line x1="5.5" y1="7.5" x2="5.51" y2="7.5"/></svg>
+              You must read the Terms and Conditions before you can check this box.
+            </div>
+          </div>
+        </div>
         <div id="r-msg" class="msg msg-error"></div>
         <button id="btn-register" class="btn btn-primary" style="margin-top:4px">Create Account</button>
       `}
+    </div>
+    </div>
     </div>
   </div>`;
 }
@@ -1501,6 +1624,7 @@ function renderSessionSetup() {
 /* ── LIVE SESSION ── */
 function renderSessionLive() {
   const { subject, elapsed, isRecording } = LS;
+  const activeLang = S.settings.language || 'English';
   return `<div class="screen no-pad" style="height:100vh;display:flex;flex-direction:column">
     <div class="page-header" id="live-header">
       <div style="width:36px"></div>
@@ -1517,6 +1641,10 @@ function renderSessionLive() {
         <div class="status-dot${isRecording?' on pulse':''}" id="sdot"></div>
         <span class="status-label${isRecording?' on':''}" id="slabel">${isRecording?'Listening...':'Tap mic to start'}</span>
         <span class="timer-display" id="stimer">${fmtTime(elapsed)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--primary-muted);border-radius:8px;font-size:12px;font-weight:600;color:var(--primary);width:fit-content">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="6.5" cy="6.5" r="5.5"/><path d="M6.5 1C5 3 4 4.7 4 6.5s1 3.5 2.5 5.5M6.5 1C8 3 9 4.7 9 6.5S8 10 6.5 12M1 6.5h11"/></svg>
+        ${escHtml(activeLang)}
       </div>
       <div class="transcript-box">
         <div class="transcript-box-label">Live Transcript</div>
@@ -1726,13 +1854,7 @@ function renderSettings() {
           <div class="settings-row">
             <span class="settings-row-label">Language</span>
             <select class="lang-select" id="sel-lang">
-              ${[
-                'English','Filipino','Cebuano','Ilocano',
-                'Spanish','French','Portuguese','Italian','German','Dutch',
-                'Japanese','Chinese (Simplified)','Chinese (Traditional)',
-                'Korean','Vietnamese','Thai','Indonesian','Malay','Hindi',
-                'Arabic','Russian','Polish','Turkish','Bengali','Swahili'
-              ].map(l=>`<option${language===l?' selected':''}>${l}</option>`).join('')}
+              ${['English','Filipino'].map(l=>`<option${language===l?' selected':''}>${l}</option>`).join('')}
             </select>
           </div>
           <div class="settings-row">
@@ -1819,11 +1941,30 @@ function bindEvents() {
     $('tab-register') ?.addEventListener('click', () => { loginTab='register'; render(); });
     $('l-eye')?.addEventListener('click', () => toggleEye('l-pw','l-eye'));
     $('r-eye')?.addEventListener('click', () => toggleEye('r-pw','r-eye'));
+    // Live password strength checker — initialize labels then update on input
+    const pwRules = {
+      'rule-len': [() => ($('r-pw')?.value||'').length >= 8,        'At least 8 characters'],
+      'rule-up':  [() => /[A-Z]/.test($('r-pw')?.value||''),        'One uppercase letter (A–Z)'],
+      'rule-low': [() => /[a-z]/.test($('r-pw')?.value||''),        'One lowercase letter (a–z)'],
+      'rule-num': [() => /[0-9]/.test($('r-pw')?.value||''),        'One number (0–9)'],
+      'rule-sym': [() => /[^A-Za-z0-9]/.test($('r-pw')?.value||''),'One special character (!@#$…)'],
+    };
+    // Set initial label text
+    Object.entries(pwRules).forEach(([id, [, label]]) => {
+      const el = $(id); if (el) el.textContent = label;
+    });
+    $('r-pw')?.addEventListener('input', () => {
+      Object.entries(pwRules).forEach(([id, [check]]) => {
+        const el = $(id); if (!el) return;
+        el.classList.toggle('met', check());
+      });
+    });
     $('btn-forgot')?.addEventListener('click', async () => {
-      const email = ($('l-email')?.value || '').trim();
-      if (!email || !isValidEmail(email)) {
+      const uid = ($('l-uid')?.value || '').trim();
+      const email = uid ? uid + '@gordoncollege.edu.ph' : '';
+      if (!uid) {
         const msg = $('l-msg');
-        showMsg(msg, 'Enter your email address above first, then tap Forgot password.');
+        showMsg(msg, 'Enter your Student ID above first, then tap Forgot password.');
         return;
       }
       const btn = $('btn-forgot');
@@ -1835,39 +1976,46 @@ function bindEvents() {
       btn.textContent = origText; btn.disabled = false;
       const msg = $('l-msg');
       if (error) showMsg(msg, 'Error: ' + error.message);
-      else showMsg(msg, '✅ Reset link sent! Check your email inbox.', 'success');
+      else showMsg(msg, 'Reset link sent! Check your email inbox.', 'success');
     });
     $('btn-login')?.addEventListener('click', async () => {
-      const email = ($('l-email')?.value || '').trim();
+      const uid   = ($('l-uid')?.value || '').trim();
+      const email = uid ? uid + '@gordoncollege.edu.ph' : '';
       const pw    = ($('l-pw')?.value    || '');
       const msg   = $('l-msg');
       hideMsg(msg);
-      if (!email || !pw) return showMsg(msg, 'Please fill in all fields.');
-      if (!isValidEmail(email)) return showMsg(msg, 'Please enter a valid email.');
+      if (!uid || !pw) return showMsg(msg, 'Please fill in all fields.');
       const btn = $('btn-login');
       btn.textContent = 'Logging in…'; btn.disabled = true;
       try {
         const acct = await sbSignIn(email, pw);
         doLogin(acct);
       } catch(e) {
-        showMsg(msg, e.message || 'Login failed. Check your email and password.');
+        showMsg(msg, e.message || 'Login failed. Check your Student ID and password.');
       } finally {
         if (btn) { btn.textContent = 'Log In'; btn.disabled = false; }
       }
     });
     $('btn-register')?.addEventListener('click', async () => {
       const name    = ($('r-name')?.value    || '').trim();
-      const email   = ($('r-email')?.value   || '').trim();
+      const uid     = ($('r-uid')?.value     || '').trim();
+      const email   = uid ? uid + '@gordoncollege.edu.ph' : '';
       const course  = ($('r-course')?.value  || '').trim();
       const section = ($('r-section')?.value || '').trim();
       const pw      = ($('r-pw')?.value      || '');
       const pw2     = ($('r-pw2')?.value     || '');
       const msg     = $('r-msg');
       hideMsg(msg);
-      if (!name || !email || !course || !section || !pw || !pw2) return showMsg(msg, 'Please fill in all fields.');
-      if (!isValidEmail(email))    return showMsg(msg, 'Please enter a valid email address.');
-      if (pw.length < 6)           return showMsg(msg, 'Password must be at least 6 characters.');
-      if (pw !== pw2)              return showMsg(msg, 'Passwords do not match.');
+      if (!name || !uid || !course || !section || !pw || !pw2) return showMsg(msg, 'Please fill in all fields.');
+      if (!/^[a-zA-Z0-9._-]+$/.test(uid)) return showMsg(msg, 'Student ID must not contain spaces or special characters.');
+      // Password strength
+      if (pw.length < 8)             return showMsg(msg, 'Password must be at least 8 characters.');
+      if (!/[A-Z]/.test(pw))         return showMsg(msg, 'Password must contain at least one uppercase letter.');
+      if (!/[a-z]/.test(pw))         return showMsg(msg, 'Password must contain at least one lowercase letter.');
+      if (!/[0-9]/.test(pw))         return showMsg(msg, 'Password must contain at least one number.');
+      if (!/[^A-Za-z0-9]/.test(pw))  return showMsg(msg, 'Password must contain at least one special character.');
+      if (pw !== pw2)                 return showMsg(msg, 'Passwords do not match.');
+      if (!$('tnc-check')?.checked)  return showMsg(msg, 'You must read and agree to the Terms and Conditions.');
       const courseSection = course + ' - ' + section;
       const btn = $('btn-register');
       btn.textContent = 'Creating account…'; btn.disabled = true;
@@ -1880,10 +2028,11 @@ function bindEvents() {
         if (btn) { btn.textContent = 'Create Account'; btn.disabled = false; }
       }
     });
-    ['l-email','l-pw'].forEach(id => {
+    $('btn-open-tnc')?.addEventListener('click', () => openTncModal());
+    ['l-uid','l-pw'].forEach(id => {
       $(id)?.addEventListener('keydown', e => { if (e.key==='Enter') $('btn-login')?.click(); });
     });
-    ['r-name','r-email','r-course','r-section','r-pw','r-pw2'].forEach(id => {
+    ['r-name','r-uid','r-course','r-section','r-pw','r-pw2'].forEach(id => {
       $(id)?.addEventListener('keydown', e => { if (e.key==='Enter') $('btn-register')?.click(); });
     });
   }
@@ -1900,8 +2049,21 @@ function bindEvents() {
   /* SESSION SETUP */
   if (s === 'session') {
     $('btn-sess-back')?.addEventListener('click', () => go('dashboard',{tab:'home'}));
-    $('btn-start-rec')?.addEventListener('click', () => {
+    $('btn-start-rec')?.addEventListener('click', async () => {
       const subj = ($('sess-subject')?.value||'').trim() || 'Untitled Session';
+      // Request mic permission explicitly before starting — avoids "permission denied" on language change
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop()); // release immediately, SpeechRecognition will re-request
+      } catch(err) {
+        const btn = $('btn-start-rec');
+        if (btn) {
+          btn.textContent = '🎤 Mic permission denied. Check browser settings.';
+          btn.disabled = true;
+          setTimeout(() => { btn.textContent = 'Start Recording'; btn.disabled = false; }, 3500);
+        }
+        return;
+      }
       startLiveSession(subj);
     });
     $('sess-subject')?.addEventListener('keydown', e => { if(e.key==='Enter') $('btn-start-rec')?.click(); });
@@ -2120,7 +2282,7 @@ const LS = {
   subject: '', elapsed: 0, timer: null,
   transcript: '', interimBuffer: '', phrases: [],
   isRecording: false, recognition: null, active: false, paused: false,
-  restartTimeout: null,
+  restartTimeout: null, lang: 'en-US',
 };
 
 function startLiveSession(subject) {
@@ -2132,6 +2294,8 @@ function startLiveSession(subject) {
   LS.isRecording= true;
   LS.active     = true;
   LS.paused     = false;
+  // Snapshot the language at session start — changes mid-session won't affect it
+  LS.lang = getLangCode(S.settings.language);
   if (LS.timer) clearInterval(LS.timer);
   if (LS.restartTimeout) { clearTimeout(LS.restartTimeout); LS.restartTimeout = null; }
 
@@ -2146,6 +2310,15 @@ function startLiveSession(subject) {
   setTimeout(() => startRecognition(), 100);
 }
 
+/* ── LANGUAGE MAP ── */
+function getLangCode(language) {
+  const langMap = {
+    'English':  'en-US',
+    'Filipino': 'fil-PH',
+  };
+  return langMap[language] || 'en-US';
+}
+
 function startRecognition() {
   if (!LS.active || LS.paused) return;
 
@@ -2156,40 +2329,15 @@ function startRecognition() {
     return;
   }
 
-  // Don't abort existing — let it finish naturally to avoid onend loop
+  // Don't start if already running
   if (LS.recognition) return;
 
-  const langMap = {
-    'English':              'en-US',
-    'Filipino':             'fil-PH',
-    'Cebuano':              'ceb-PH',
-    'Ilocano':              'ilo-PH',
-    'Spanish':              'es-ES',
-    'French':               'fr-FR',
-    'Portuguese':           'pt-BR',
-    'Italian':              'it-IT',
-    'German':               'de-DE',
-    'Dutch':                'nl-NL',
-    'Japanese':             'ja-JP',
-    'Chinese (Simplified)': 'zh-CN',
-    'Chinese (Traditional)':'zh-TW',
-    'Korean':               'ko-KR',
-    'Vietnamese':           'vi-VN',
-    'Thai':                 'th-TH',
-    'Indonesian':           'id-ID',
-    'Malay':                'ms-MY',
-    'Hindi':                'hi-IN',
-    'Arabic':               'ar-SA',
-    'Russian':              'ru-RU',
-    'Polish':               'pl-PL',
-    'Turkish':              'tr-TR',
-    'Bengali':              'bn-BD',
-    'Swahili':              'sw-KE',
-  };
+  // Always create a fresh instance — reusing instances can cause lang to be ignored
   const r = new SR();
   r.continuous      = true;
   r.interimResults  = true;
-  r.lang            = langMap[S.settings.language] || 'en-US';
+  // Use the language snapshotted at session start (LS.lang), not the live setting
+  r.lang            = LS.lang || getLangCode(S.settings.language);
   r.maxAlternatives = 1;
 
   r.onstart = () => {
@@ -2220,7 +2368,15 @@ function startRecognition() {
       LS.recognition = null;
       updateLiveUI();
       const lb = $('slabel');
-      if (lb) lb.textContent = 'Mic permission denied.';
+      if (lb) lb.textContent = 'Microphone permission denied. Please allow mic access in your browser settings and try again.';
+    } else if (ev.error === 'language-not-supported') {
+      // Fall back to English silently
+      S.settings.language = 'English';
+      persistSettings();
+      LS.recognition = null;
+      if (LS.active && !LS.paused) {
+        setTimeout(() => startRecognition(), 300);
+      }
     }
     // All other errors: ignore, onend will handle restart
   };
@@ -2368,6 +2524,102 @@ async function endSession() {
   }
 }
 
+/* ── TERMS & CONDITIONS MODAL ── */
+function openTncModal() {
+  if (document.getElementById('tnc-modal-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'tnc-modal-overlay';
+  overlay.className = 'tnc-modal-overlay';
+  overlay.innerHTML = `
+    <div class="tnc-modal" id="tnc-modal">
+      <div class="tnc-modal-header">
+        <span class="tnc-modal-title">Terms and Conditions</span>
+        <button class="tnc-modal-close" id="tnc-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="13" y1="3" x2="3" y2="13"/><line x1="3" y1="3" x2="13" y2="13"/></svg>
+        </button>
+      </div>
+      <div class="tnc-modal-body" id="tnc-body">
+        <h3>1. Acceptance of Terms</h3>
+        <p>By registering for and using HearSay ("the App"), you agree to be bound by these Terms and Conditions. If you do not agree, do not use the App.</p>
+
+        <h3>2. Eligibility</h3>
+        <p>HearSay is intended for enrolled students of Gordon College. You must provide a valid Student ID to register. You are responsible for the accuracy of the information you provide.</p>
+
+        <h3>3. Use of the App</h3>
+        <p>HearSay is designed to assist students with real-time classroom transcription and note-taking. You agree to use the App only for lawful, educational purposes. You must not use the App to record or transcribe any person without their knowledge or consent.</p>
+
+        <h3>4. Privacy and Data</h3>
+        <p>Your transcripts, summaries, and account information are stored securely. We do not sell your data to third parties. Recordings are processed locally in your browser using the Web Speech API and are not transmitted to HearSay servers unless you are logged in and saving a session. By using the App, you consent to the storage of your session data in our database.</p>
+
+        <h3>5. Account Security</h3>
+        <p>You are responsible for maintaining the confidentiality of your password. You agree to notify the administrators immediately of any unauthorized use of your account. HearSay is not liable for any loss or damage arising from your failure to comply with this requirement.</p>
+
+        <h3>6. Academic Integrity</h3>
+        <p>HearSay is a note-taking aid. Using transcriptions or summaries generated by the App to engage in academic dishonesty, plagiarism, or any violation of Gordon College's academic integrity policy is strictly prohibited and is solely your responsibility.</p>
+
+        <h3>7. Intellectual Property</h3>
+        <p>All content, design, and functionality of HearSay are the intellectual property of the HearSay development team. You may not reproduce, modify, or distribute any part of the App without prior written permission.</p>
+
+        <h3>8. Disclaimers</h3>
+        <p>HearSay is provided "as is." Transcription accuracy depends on your device's microphone, browser support, and ambient noise conditions. We do not guarantee 100% accuracy of any transcript or summary generated by the App.</p>
+
+        <h3>9. Changes to Terms</h3>
+        <p>We reserve the right to update these Terms and Conditions at any time. Continued use of the App after changes are posted constitutes your acceptance of the new terms.</p>
+
+        <h3>10. Contact</h3>
+        <p>If you have questions about these Terms and Conditions, please contact the HearSay team through your institution's official channels.</p>
+
+        <p style="margin-top:16px;font-size:11.5px;color:var(--text-muted);font-style:italic">Last updated: May 2025</p>
+      </div>
+      <div class="tnc-modal-footer">
+        <div class="tnc-read-indicator" id="tnc-read-indicator">
+          <div class="tnc-read-dot"></div>
+          <span id="tnc-read-label">Scroll to the bottom to confirm you've read the terms.</span>
+        </div>
+        <button class="btn btn-primary" id="tnc-agree-btn" disabled style="opacity:.5;cursor:not-allowed">I Agree</button>
+      </div>
+    </div>`;
+
+  document.getElementById('app').appendChild(overlay);
+
+  const body    = document.getElementById('tnc-body');
+  const agreeBtn = document.getElementById('tnc-agree-btn');
+  const indicator = document.getElementById('tnc-read-indicator');
+  const readLabel = document.getElementById('tnc-read-label');
+  let hasReadAll = false;
+
+  // Detect when user has scrolled to bottom of T&C body
+  function checkRead() {
+    if (hasReadAll) return;
+    const scrolledToBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 24;
+    if (scrolledToBottom) {
+      hasReadAll = true;
+      agreeBtn.disabled = false;
+      agreeBtn.style.opacity = '';
+      agreeBtn.style.cursor = '';
+      indicator.classList.add('read');
+      readLabel.textContent = 'You have read the Terms and Conditions.';
+    }
+  }
+  body.addEventListener('scroll', checkRead);
+  // Also check immediately in case content is short enough
+  setTimeout(checkRead, 300);
+
+  // Agree button — unlock checkbox and close
+  agreeBtn.addEventListener('click', () => {
+    const cb   = document.getElementById('tnc-check');
+    const hint = document.getElementById('tnc-hint');
+    if (cb) { cb.disabled = false; cb.checked = true; }
+    if (hint) hint.style.display = 'none';
+    overlay.remove();
+  });
+
+  // Close button — just closes, does NOT unlock checkbox
+  document.getElementById('tnc-close-btn').addEventListener('click', () => overlay.remove());
+  // Tap outside modal closes it too
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
 /* ── INIT ── */
 async function init() {
   hydrate();
@@ -2380,6 +2632,32 @@ async function init() {
       </div>
       <div style="font-size:13px;color:var(--text-muted);font-weight:600">Loading HearSay…</div>
     </div>`;
+
+  // Listen for auth state changes FIRST so PASSWORD_RECOVERY is never missed
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      // User clicked the reset link — show the reset password screen
+      S.user = null;
+      S.screen = 'reset-password';
+      render();
+      return;
+    }
+    if (event === 'SIGNED_OUT') {
+      S.user = null; S.sessions = [];
+      go('landing');
+    }
+  });
+
+  // Check if the URL contains a password-recovery token (hash fragment from Supabase email link)
+  const hash = window.location.hash;
+  const isPasswordRecovery = hash.includes('type=recovery') || hash.includes('type=magiclink');
+
+  if (isPasswordRecovery) {
+    // Let onAuthStateChange handle it — just render a blank state and wait
+    S.screen = 'reset-password';
+    render();
+    return;
+  }
 
   // Check if user already has a session with Supabase
   const { data: { session } } = await sb.auth.getSession();
@@ -2402,20 +2680,6 @@ async function init() {
   }
 
   render();
-
-  // Listen for auth state changes (e.g. token refresh, password recovery)
-  sb.auth.onAuthStateChange((event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      // User clicked the reset link — show the reset password screen
-      S.screen = 'reset-password';
-      render();
-      return;
-    }
-    if (event === 'SIGNED_OUT') {
-      S.user = null; S.sessions = [];
-      go('landing');
-    }
-  });
 }
 
 init();
