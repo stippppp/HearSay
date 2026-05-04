@@ -808,6 +808,7 @@
     @media (min-width: 900px) {
       #bottom-nav { display: none !important; }
       #btn-menu-open { display: flex !important; }
+      .desktop-menu-btn { display: flex !important; }
       .dash-title { display: block !important; }
       .dash-header { justify-content: space-between !important; }
       #app {
@@ -1474,7 +1475,7 @@ function renderSessionSetup() {
     <div class="page-header">
       <button class="icon-btn" id="btn-sess-back">${ic('i-back',20,20)}</button>
       <span class="page-title">New Session</span>
-      <div style="width:36px"></div>
+      ${menuBtn()}
     </div>
     <div class="session-setup">
       <div class="setup-icon">${ic('i-mic',36,36)}</div>
@@ -1538,6 +1539,11 @@ function renderSessionLive() {
   </div>`;
 }
 
+/* ── MENU BTN HELPER (desktop drawer trigger) ── */
+function menuBtn() {
+  return `<button class="icon-btn desktop-menu-btn" onclick="openMenuDrawer()" style="display:none">${ic('i-menu',22,22)}</button>`;
+}
+
 /* ── SUMMARIES / SESSION DETAIL ── */
 const openCards = {};
 function renderSummaries(filterId) {
@@ -1550,7 +1556,7 @@ function renderSummaries(filterId) {
     <div class="page-header">
       ${backBtn}
       <span class="page-title">${filterId ? 'Session Details' : 'My Notes'}</span>
-      <div style="width:36px"></div>
+      ${menuBtn()}
     </div>
     <div class="summaries-body">
       ${!filterId && list.length ? `<p class="summary-count">${list.length} session${list.length!==1?'s':''} saved</p>` : ''}
@@ -1620,7 +1626,7 @@ function renderProfile() {
     <div class="page-header">
       <div style="width:36px"></div>
       <span class="page-title">My Profile</span>
-      <div style="width:36px"></div>
+      ${menuBtn()}
     </div>
     <div class="profile-banner">
       <div style="position:relative;display:inline-block">
@@ -1677,7 +1683,7 @@ function renderSettings() {
     <div class="page-header">
       <div style="width:36px"></div>
       <span class="page-title">Settings</span>
-      <div style="width:36px"></div>
+      ${menuBtn()}
     </div>
     <div class="settings-body">
 
