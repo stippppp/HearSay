@@ -2337,7 +2337,7 @@ function startRecognition() {
   r.continuous      = true;
   r.interimResults  = true;
   // Use the language snapshotted at session start (LS.lang), not the live setting
-  r.lang            = LS.lang || getLangCode(S.settings.language);
+  r.lang            = LS.lang;
   r.maxAlternatives = 1;
 
   r.onstart = () => {
@@ -2370,8 +2370,9 @@ function startRecognition() {
       const lb = $('slabel');
       if (lb) lb.textContent = 'Microphone permission denied. Please allow mic access in your browser settings and try again.';
     } else if (ev.error === 'language-not-supported') {
-      // Fall back to English silently
+      // Fall back to English and make sure LS.lang is also updated
       S.settings.language = 'English';
+      LS.lang = 'en-US';
       persistSettings();
       LS.recognition = null;
       if (LS.active && !LS.paused) {
