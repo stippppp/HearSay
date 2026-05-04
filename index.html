@@ -1884,8 +1884,15 @@ function renderSettings() {
           ${showPwPanel ? `
             <div class="pw-panel">
               <div class="input-wrap">
-                <input id="pw-new" class="input" type="password" placeholder="New password (min 6 chars)" style="padding-right:46px"/>
+                <input id="pw-new" class="input" type="password" placeholder="New password" style="padding-right:46px"/>
                 <button class="input-eye" id="pw-eye" type="button">${ic('i-eye',16,16)}</button>
+              </div>
+              <div id="pw-strength" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;background:var(--card);border-radius:10px;border:1px solid var(--border)">
+                <div class="pw-rule" id="pw-rule-len" data-label="At least 8 characters"></div>
+                <div class="pw-rule" id="pw-rule-up"  data-label="One uppercase letter (A–Z)"></div>
+                <div class="pw-rule" id="pw-rule-low" data-label="One lowercase letter (a–z)"></div>
+                <div class="pw-rule" id="pw-rule-num" data-label="One number (0–9)"></div>
+                <div class="pw-rule" id="pw-rule-sym" data-label="One special character (!@#$…)"></div>
               </div>
               <input id="pw-confirm" class="input" type="password" placeholder="Confirm new password" />
               <div id="pw-msg" class="msg"></div>
@@ -1950,6 +1957,7 @@ function bindEvents() {
       try {
         const { error } = await sb.auth.updateUser({ password: np });
         if (error) throw error;
+        sessionStorage.removeItem('hs_recovery');
         showMsg(msg, 'Password updated successfully! Redirecting…', 'success');
         setTimeout(() => { loginTab='login'; go('login'); }, 2000);
       } catch(e) {
@@ -2177,6 +2185,22 @@ function bindEvents() {
     $('tog-auto')?.addEventListener('change', e => { S.settings.autoSummarize=e.target.checked; persistSettings(); });
     $('btn-toggle-pw')?.addEventListener('click', () => { showPwPanel=!showPwPanel; render(); });
     $('pw-eye')?.addEventListener('click', () => toggleEye('pw-new','pw-eye'));
+    // Live criteria checker for change password
+    const pwSettingsRules = {
+      'pw-rule-len': () => ($('pw-new')?.value||'').length >= 8,
+      'pw-rule-up':  () => /[A-Z]/.test($('pw-new')?.value||''),
+      'pw-rule-low': () => /[a-z]/.test($('pw-new')?.value||''),
+      'pw-rule-num': () => /[0-9]/.test($('pw-new')?.value||''),
+      'pw-rule-sym': () => /[^A-Za-z0-9]/.test($('pw-new')?.value||''),
+    };
+    Object.entries(pwSettingsRules).forEach(([id]) => {
+      const el = $(id); if (el) el.textContent = el.dataset.label;
+    });
+    $('pw-new')?.addEventListener('input', () => {
+      Object.entries(pwSettingsRules).forEach(([id, check]) => {
+        const el = $(id); if (el) el.classList.toggle('met', check());
+      });
+    });
     $('btn-update-pw')?.addEventListener('click', updatePassword);
     $('btn-logout')?.addEventListener('click', doLogout);
   }
@@ -2247,8 +2271,12 @@ async function updatePassword() {
   const cp  = ($('pw-confirm')?.value || '');
   const msg = $('pw-msg');
   hideMsg(msg);
-  if (np.length < 6) return showMsg(msg, 'Password must be at least 6 characters.');
-  if (np !== cp)     return showMsg(msg, 'Passwords do not match.');
+  if (np.length < 8)             return showMsg(msg, 'Password must be at least 8 characters.');
+  if (!/[A-Z]/.test(np))         return showMsg(msg, 'Password must contain at least one uppercase letter.');
+  if (!/[a-z]/.test(np))         return showMsg(msg, 'Password must contain at least one lowercase letter.');
+  if (!/[0-9]/.test(np))         return showMsg(msg, 'Password must contain at least one number.');
+  if (!/[^A-Za-z0-9]/.test(np))  return showMsg(msg, 'Password must contain at least one special character.');
+  if (np !== cp)                  return showMsg(msg, 'Passwords do not match.');
   const btn = $('btn-update-pw');
   if (btn) { btn.textContent = 'Updating…'; btn.disabled = true; }
   try {
@@ -2665,13 +2693,15 @@ async function init() {
   // Listen for auth state changes FIRST so PASSWORD_RECOVERY is never missed
   sb.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
-      // User clicked the reset link — show the reset password screen
+      // User clicked the reset link — persist flag and show reset screen
+      sessionStorage.setItem('hs_recovery', '1');
       S.user = null;
       S.screen = 'reset-password';
       render();
       return;
     }
     if (event === 'SIGNED_OUT') {
+      sessionStorage.removeItem('hs_recovery');
       S.user = null; S.sessions = [];
       go('landing');
     }
@@ -2681,8 +2711,11 @@ async function init() {
   const hash = window.location.hash;
   const isPasswordRecovery = hash.includes('type=recovery') || hash.includes('type=magiclink');
 
-  if (isPasswordRecovery) {
-    // Let onAuthStateChange handle it — just render a blank state and wait
+  // Also check sessionStorage in case user refreshed mid-reset
+  const inRecovery = isPasswordRecovery || sessionStorage.getItem('hs_recovery') === '1';
+
+  if (inRecovery) {
+    sessionStorage.setItem('hs_recovery', '1');
     S.screen = 'reset-password';
     render();
     return;
