@@ -208,14 +208,93 @@
     .msg-error { color: var(--danger); background: rgba(217,83,79,.08); }
     .msg-success { color: var(--success); background: rgba(46,125,50,.08); }
 
+    /* ── GLOW BACKGROUND (Landing + Login) ── */
+    .glow-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-bg canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Deep layered mesh background */
+    .glow-mesh {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 20%, rgba(26,80,160,0.45) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 75%, rgba(14,50,120,0.4) 0%, transparent 60%),
+        radial-gradient(ellipse 100% 80% at 50% 110%, rgba(10,30,80,0.6) 0%, transparent 55%);
+    }
+
+    /* Noise grain overlay */
+    .glow-grain {
+      position: absolute; inset: 0;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 140px 140px;
+    }
+
+    /* CSS floating dot particles (supplement canvas) */
+    .glow-particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(130,200,255,0.6);
+      animation: floatParticle linear infinite;
+    }
+    @keyframes floatParticle {
+      0%   { transform: translateY(0) scale(1);   opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 0.4; }
+      100% { transform: translateY(-120px) scale(0.4); opacity: 0; }
+    }
+
+    /* Login header glow */
+    .login-header-glow {
+      position: absolute; inset: 0;
+      pointer-events: none; overflow: hidden;
+    }
+    .login-header-glow::before {
+      content: '';
+      position: absolute;
+      width: 200px; height: 200px;
+      top: -80px; right: -40px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(74,144,217,0.5) 0%, transparent 70%);
+      filter: blur(40px);
+      animation: loginOrbPulse 5s ease-in-out infinite;
+    }
+    .login-header-glow::after {
+      content: '';
+      position: absolute;
+      width: 150px; height: 150px;
+      bottom: -60px; left: 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(100,180,255,0.35) 0%, transparent 70%);
+      filter: blur(35px);
+      animation: loginOrbPulse 5s ease-in-out infinite 2.5s;
+    }
+    @keyframes loginOrbPulse {
+      0%,100% { opacity: 0.5; transform: scale(0.9); }
+      50%     { opacity: 1;   transform: scale(1.1); }
+    }
+
     /* ── LANDING PAGE ── */
     .landing-screen {
       min-height: 100vh;
-      background: var(--grad-header);
+      background: linear-gradient(175deg, #020b18 0%, #071428 30%, #0a1e40 60%, #0f2548 100%);
       display: flex; flex-direction: column;
       padding: 0;
       overflow-y: auto;
       animation: fadeIn .4s ease-out;
+      position: relative;
     }
     .landing-hero {
       flex: 1; display: flex; flex-direction: column;
@@ -233,24 +312,26 @@
     }
     .landing-logo-wrap {
       width: 88px; height: 88px; border-radius: 28px;
-      background: rgba(255,255,255,.12);
-      border: 1.5px solid rgba(255,255,255,.2);
+      background: rgba(74,144,217,0.15);
+      border: 1.5px solid rgba(130,200,255,.3);
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 24px;
-      box-shadow: 0 0 60px rgba(74,144,217,.25), 0 8px 32px rgba(0,0,0,.2);
+      box-shadow: 0 0 0 12px rgba(74,144,217,0.06), 0 0 0 28px rgba(74,144,217,0.03), 0 0 80px rgba(74,144,217,0.35), 0 8px 32px rgba(0,0,0,.4);
       animation: floatLogo 3s ease-in-out infinite;
+      position: relative;
     }
     @keyframes floatLogo {
-      0%,100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
+      0%,100% { transform: translateY(0); box-shadow: 0 0 0 12px rgba(74,144,217,0.06), 0 0 0 28px rgba(74,144,217,0.03), 0 0 80px rgba(74,144,217,0.35), 0 8px 32px rgba(0,0,0,.4); }
+      50%     { transform: translateY(-7px); box-shadow: 0 0 0 16px rgba(74,144,217,0.08), 0 0 0 36px rgba(74,144,217,0.04), 0 0 100px rgba(74,144,217,0.5), 0 14px 40px rgba(0,0,0,.5); }
     }
-    .landing-logo-wrap svg { stroke: #fff; }
+    .landing-logo-wrap svg { stroke: #fff; filter: drop-shadow(0 0 8px rgba(130,200,255,0.8)); }
     .landing-h1 {
       font-size: 34px; font-weight: 800;
       color: #fff; line-height: 1.15;
       letter-spacing: -.8px; margin-bottom: 12px;
+      text-shadow: 0 0 40px rgba(74,144,217,0.3);
     }
-    .landing-h1 em { font-style: normal; color: rgba(130,190,255,1); }
+    .landing-h1 em { font-style: normal; color: rgba(130,190,255,1); text-shadow: 0 0 30px rgba(130,190,255,0.6); }
     .landing-sub {
       font-size: 15px; color: rgba(160,200,255,.85);
       line-height: 1.65; max-width: 260px; margin: 0 auto 32px;
@@ -261,13 +342,14 @@
     }
     .landing-feat {
       display: flex; align-items: center; gap: 14px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(130,200,255,.12);
       border-radius: 14px; padding: 13px 16px;
       text-align: left;
-      transition: background .15s;
+      transition: background .15s, border-color .15s;
+      backdrop-filter: blur(8px);
     }
-    .landing-feat:hover { background: rgba(255,255,255,.12); }
+    .landing-feat:hover { background: rgba(74,144,217,.12); border-color: rgba(130,200,255,.22); }
     .feat-icon {
       width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
       background: rgba(74,144,217,.3);
@@ -300,9 +382,37 @@
     .login-header {
       display: flex; align-items: center;
       padding: 52px 20px 28px;
-      background: var(--grad-header);
+      background: linear-gradient(160deg, #060f1e 0%, #0b1e3d 50%, #1a3c6e 100%);
       position: relative;
       gap: 0;
+      overflow: hidden;
+    }
+    /* Mini glow orbs inside login header */
+    .login-header-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .login-header-glow::before {
+      content: '';
+      position: absolute;
+      width: 200px; height: 200px;
+      top: -80px; right: -40px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(74,144,217,0.5) 0%, transparent 70%);
+      filter: blur(40px);
+      animation: orbPulse 5s ease-in-out infinite;
+    }
+    .login-header-glow::after {
+      content: '';
+      position: absolute;
+      width: 150px; height: 150px;
+      bottom: -60px; left: 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(100,180,255,0.35) 0%, transparent 70%);
+      filter: blur(35px);
+      animation: orbPulse 5s ease-in-out infinite 2.5s;
     }
 
     @media (min-width: 900px) {
@@ -1319,6 +1429,7 @@ function openMenuDrawer() {
 
 /* ── NAVIGATION ── */
 function go(screen, opts={}) {
+  if (window._waveCleanup) { window._waveCleanup(); window._waveCleanup = null; }
   S.prevScreen = S.screen;
   S.screen = screen;
   if (opts.tab !== undefined) S.tab = opts.tab;
@@ -1398,7 +1509,13 @@ function bindNav() {
 /* ── LANDING ── */
 function renderLanding() {
   return `<div class="screen no-pad landing-screen">
-    <div class="landing-hero">
+    <!-- Glowy background -->
+    <div class="glow-bg" aria-hidden="true">
+      <div class="glow-mesh"></div>
+      <div class="glow-grain"></div>
+      <canvas id="wave-canvas"></canvas>
+    </div>
+    <div class="landing-hero" style="position:relative;z-index:1">
       <div class="landing-logo-wrap" style="margin-top:0">${ic('i-mic',36,36)}</div>
       <h1 class="landing-h1">Never miss a word<br><em>in class</em></h1>
       <p class="landing-sub">Real-time transcription and smart summaries for every lecture.</p>
@@ -1481,8 +1598,9 @@ function renderLogin() {
     <div class="login-screen-wrap">
     <div class="login-card" style="width:100%">
     <div class="login-header" style="position:relative">
-      <button class="login-back" id="btn-login-back">${ic('i-back',18,18)}</button>
-      <div style="display:flex;align-items:center;gap:12px;flex:1">
+      <div class="login-header-glow"></div>
+      <button class="login-back" id="btn-login-back" style="position:relative;z-index:1">${ic('i-back',18,18)}</button>
+      <div style="display:flex;align-items:center;gap:12px;flex:1;position:relative;z-index:1">
         <div class="login-logo">${ic('i-mic',24,24)}</div>
         <div>
           <div class="login-brand-name">HearSay</div>
@@ -1949,6 +2067,201 @@ function bindEvents() {
   if (s === 'landing') {
     $('btn-land-start')?.addEventListener('click', () => { loginTab='register'; go('login'); });
     $('btn-land-login')?.addEventListener('click', () => { loginTab='login';    go('login'); });
+
+    // Landing canvas animation — DHH themed
+    const canvas = document.getElementById('wave-canvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      let raf, t = 0, W = 0, H = 0;
+
+      function resizeCanvas() {
+        const parent = canvas.closest('.landing-screen') || canvas.parentElement;
+        const rect = parent.getBoundingClientRect();
+        W = canvas.width  = rect.width  || window.innerWidth;
+        H = canvas.height = rect.height || window.innerHeight;
+      }
+
+      // Wait one frame so layout is complete before measuring
+      setTimeout(() => {
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas, { passive: true });
+        startAnimation();
+      }, 60);
+
+      // ── Caption phrases — things a DHH student might miss without HearSay ──
+      const PHRASES = [
+        'The exam will be on Friday...',
+        'Please read chapter four...',
+        'This will be on the test.',
+        'Any questions before we move on?',
+        'That\'s a great point...',
+        'Let me explain that again.',
+        'Don\'t forget the assignment.',
+        'Office hours are at 3PM.',
+        'Here\'s the most important part.',
+        'Can everyone hear me okay?',
+        'Turn to page forty-two.',
+        'This is a key concept.',
+      ];
+
+      // 6 captions: 2 per zone (left / center / right), evenly staggered
+      const CAPTION_COUNT = 6;
+      // zone 0=left, 1=center, 2=right — each gets 2 slots
+      const ZONES = [
+        { min: 0.04, max: 0.28 },  // left
+        { min: 0.33, max: 0.57 },  // center
+        { min: 0.62, max: 0.86 },  // right
+      ];
+      function makeCaption(slotIndex) {
+        const zone = ZONES[Math.floor(slotIndex / 2) % 3];
+        return {
+          phrase:    PHRASES[Math.floor(Math.random() * PHRASES.length)],
+          xFrac:     zone.min + Math.random() * (zone.max - zone.min),
+          yFrac:     0.08 + Math.random() * 0.76,
+          life:      0,
+          maxLife:   220 + Math.random() * 160,
+          fadeIn:    55,
+          fadeOut:   60,
+          // stagger: each slot starts well apart — 100 frames between each
+          delay:     slotIndex * 100,
+          fontSize:  10.5 + Math.random() * 2.5,
+          peakAlpha: 0.16 + Math.random() * 0.12,
+          zone,
+        };
+      }
+
+      let captions = Array.from({ length: CAPTION_COUNT }, (_, i) => makeCaption(i));
+
+      // ── Floating glow particles ──
+      const DOTS = 26;
+      const dots = Array.from({ length: DOTS }, () => ({
+        xF: Math.random(), yF: 0.25 + Math.random() * 0.55,
+        r:  1.0 + Math.random() * 2.2,
+        vx: (Math.random() - 0.5) * 0.00016,
+        vy: -(0.00004 + Math.random() * 0.0001),
+        alpha: 0.2 + Math.random() * 0.5,
+        life:  Math.random(),
+        decay: 0.0006 + Math.random() * 0.001,
+      }));
+
+      // ── CC bar strip ──
+      const VOICE_BARS = 28;
+      const vBars = Array.from({ length: VOICE_BARS }, (_, i) => ({
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.5 + Math.random() * 0.8,
+        bias:  Math.pow(Math.sin((i / VOICE_BARS) * Math.PI), 1.2),
+      }));
+
+      function startAnimation() {
+        function drawFrame() {
+          if (!canvas.isConnected) return; // stop if removed from DOM
+          ctx.clearRect(0, 0, W, H);
+
+          // ── 1. Ambient glow blobs ──
+          [[0.14, 0.18, 0.52, 35, 90, 195, 0.20, 0.07, 0.28],
+           [0.83, 0.74, 0.42, 18, 65, 155, 0.16, 0.06, 0.23]
+          ].forEach(([xb, yb, rad, r, g, b, base, amp, spd], ci) => {
+            const bx = W * (xb + 0.05 * Math.sin(t * 0.17 * (ci+1)));
+            const by = H * (yb + 0.06 * Math.cos(t * 0.12 * (ci+1)));
+            const gr = ctx.createRadialGradient(bx, by, 0, bx, by, W * rad);
+            gr.addColorStop(0, `rgba(${r},${g},${b},${base + amp * Math.sin(t * spd)})`);
+            gr.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = gr;
+            ctx.fillRect(0, 0, W, H);
+          });
+
+          // ── 2. Caption blocks ──
+          ctx.save();
+          captions.forEach((cap, idx) => {
+            if (cap.delay > 0) { cap.delay--; return; }
+            cap.life++;
+
+            let a = cap.peakAlpha;
+            if (cap.life < cap.fadeIn)                        a *= cap.life / cap.fadeIn;
+            else if (cap.life > cap.maxLife - cap.fadeOut)    a *= (cap.maxLife - cap.life) / cap.fadeOut;
+            if (a <= 0 || cap.life >= cap.maxLife) {
+              const fresh = makeCaption(idx);
+              fresh.delay = 80 + Math.random() * 120; // respawn delay so they don't bunch up
+              captions[idx] = fresh;
+              return;
+            }
+
+            const fs = cap.fontSize;
+            ctx.font = `500 ${fs}px 'DM Sans', sans-serif`;
+            const tw  = ctx.measureText(cap.phrase).width;
+            const padX = 10, padY = 5;
+            const bw = tw + padX * 2;
+            const bh = fs + padY * 2;
+            const bx = Math.max(8, Math.min(cap.xFrac * W - bw / 2, W - bw - 8));
+            const by = Math.min(cap.yFrac * H, H - bh - 10);
+
+            // box
+            ctx.fillStyle = `rgba(15,40,110,${a * 0.75})`;
+            ctx.beginPath();
+            ctx.roundRect(bx, by, bw, bh, 5);
+            ctx.fill();
+
+            // left CC strip
+            ctx.fillStyle = `rgba(100,175,255,${Math.min(a * 1.6, 1)})`;
+            ctx.fillRect(bx, by + 3, 2.5, bh - 6);
+
+            // text
+            ctx.fillStyle = `rgba(185,220,255,${Math.min(a * 1.5, 1)})`;
+            ctx.fillText(cap.phrase, bx + padX, by + padY + fs * 0.82);
+          });
+          ctx.restore();
+
+          // ── 3. CC bar strip ──
+          const barAreaH   = H * 0.09;
+          const barAreaTop = H * 0.855;
+          const barW       = (W * 0.80) / VOICE_BARS;
+          const startX     = W * 0.10;
+          vBars.forEach((b, i) => {
+            const pulse = 0.5 + 0.5 * Math.sin(b.phase + t * b.speed);
+            const bh    = (0.10 + b.bias * 0.55) * pulse * barAreaH;
+            const bx    = startX + i * barW;
+            const by    = barAreaTop + barAreaH - bh;
+            const a     = 0.18 + 0.16 * pulse;
+            const gb    = ctx.createLinearGradient(bx, by + bh, bx, by);
+            gb.addColorStop(0, `rgba(28,72,175,${a * 0.5})`);
+            gb.addColorStop(0.5, `rgba(68,132,228,${a})`);
+            gb.addColorStop(1, `rgba(155,212,255,${a * 1.1})`);
+            ctx.fillStyle = gb;
+            ctx.beginPath();
+            ctx.roundRect(bx + barW * 0.14, by, barW * 0.72, bh, [2, 2, 0, 0]);
+            ctx.fill();
+            ctx.fillStyle = `rgba(190,232,255,${a * 0.8})`;
+            ctx.fillRect(bx + barW * 0.14, by, barW * 0.72, 1.2);
+          });
+
+          // ── 4. Floating glow particles ──
+          dots.forEach(d => {
+            d.xF += d.vx; d.yF += d.vy; d.life -= d.decay;
+            if (d.life <= 0 || d.xF < 0 || d.xF > 1 || d.yF < 0.05 || d.yF > 0.95) {
+              d.xF = 0.05 + Math.random() * 0.9; d.yF = 0.4 + Math.random() * 0.35;
+              d.life = 0.6 + Math.random() * 0.4; d.r = 1.0 + Math.random() * 2.2;
+              d.vx = (Math.random() - 0.5) * 0.00016; d.vy = -(0.00004 + Math.random() * 0.0001);
+            }
+            const px = d.xF * W, py = d.yF * H;
+            const fade = Math.min(d.life * 2.5, 1);
+            const gd = ctx.createRadialGradient(px, py, 0, px, py, d.r * 4);
+            gd.addColorStop(0, `rgba(155,215,255,${d.alpha * fade * 0.7})`);
+            gd.addColorStop(1, 'rgba(70,140,255,0)');
+            ctx.fillStyle = gd;
+            ctx.beginPath(); ctx.arc(px, py, d.r * 4, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = `rgba(215,242,255,${d.alpha * fade})`;
+            ctx.beginPath(); ctx.arc(px, py, d.r, 0, Math.PI * 2); ctx.fill();
+          });
+
+          t += 0.016;
+          raf = requestAnimationFrame(drawFrame);
+        }
+        drawFrame();
+      }
+
+      window._waveCleanup = () => { cancelAnimationFrame(raf); };
+    }
+
   }
 
   /* RESET PASSWORD */
