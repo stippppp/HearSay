@@ -1907,20 +1907,10 @@ function renderSumCard(s, forceOpen=false) {
         <div class="sum-content">
           ${c.tab === 'summary' ? `
             ${s.summaryLoading ? `
-              <div class="ai-loading" id="ai-loading-${s.id}">
+              <div class="ai-loading" id="ai-loading-${escHtml(s.id)}">
                 <div class="spinner"></div>
-                <span id="ai-loading-label-${s.id}">Generating summary with BART…</span>
-              </div>
-              <script>
-                (function() {
-                  var t = setTimeout(function() {
-                    var el = document.getElementById('ai-loading-label-${s.id}');
-                    if (el) el.textContent = 'This may take a moment on first use…';
-                  }, 8000);
-                  window.__bartHints = window.__bartHints || [];
-                  window.__bartHints.push(t);
-                })();
-              </script>` : `
+                <span id="ai-loading-label-${escHtml(s.id)}">Generating summary with BART…</span>
+              </div>` : `
               <div class="sum-text">${escHtml(s.summary||'No summary available.')}</div>
             `}` : `
             <div class="sum-text">${escHtml(s.transcript||'No transcript available.')}</div>
@@ -3041,6 +3031,12 @@ async function endSession() {
   openCards[session.id] = { open: true, tab: 'summary' };
   go('summaries', { tab: 'summaries' });
 
+  // Show slow-start hint after 8 seconds if still loading
+  const hintTimer = setTimeout(() => {
+    const label = document.getElementById('ai-loading-label-' + session.id);
+    if (label) label.textContent = 'This may take a moment on first use…';
+  }, 8000);
+
   // ── Run BART summarization in background ──
   if (fullText.length > 30) {
     try {
@@ -3052,6 +3048,8 @@ async function endSession() {
       // Graceful fallback — your original smart summary
       session.summary      = smartSummary(fullText, LS.subject);
       session.summaryLoading = false;
+    } finally {
+      clearTimeout(hintTimer);
     }
   } else {
     // Too short for BART — use fallback immediately
