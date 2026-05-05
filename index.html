@@ -1248,23 +1248,6 @@ async function sbUpdatePassword(newPassword) {
   if (error) throw error;
 }
 
-/* ── SEED DATA ── */
-function seedSessions() {
-  return [
-    { id:'s1', subject:'Math 101', date:'Today', duration:'00:42:10',
-      transcript:'Today we covered integration by parts. The formula is integral of u dv equals uv minus integral of v du. This is particularly useful when you have a product of functions. We worked through several examples involving polynomial and trigonometric functions.',
-      summary:'Integration by parts was introduced as a technique for integrating products of functions. The formula ∫u dv = uv − ∫v du was derived and applied to polynomial and trigonometric function pairs through multiple worked examples.',
-      keyPhrases:['integration','polynomial','trigonometric','formula','calculus'] },
-    { id:'s2', subject:'English Literature', date:'Yesterday', duration:'00:50:00',
-      transcript:'We analyzed the symbolism in The Great Gatsby. The green light represents Gatsby\'s hopes and dreams for the future. The Valley of Ashes symbolizes moral decay and social inequality. Fitzgerald uses color symbolism throughout the novel.',
-      summary:'The class examined symbolic imagery in The Great Gatsby, focusing on the green light as a representation of Gatsby\'s aspirations and the Valley of Ashes as a symbol of moral decay and class inequality. Fitzgerald\'s use of color as a narrative device was identified as a central literary technique.',
-      keyPhrases:['symbolism','Fitzgerald','inequality','decay','metaphor','Gatsby','light'] },
-    { id:'s3', subject:'Biology', date:'Monday', duration:'00:45:30',
-      transcript:'The lecture covered cell division processes: mitosis and meiosis. Mitosis produces two identical daughter cells used for growth and repair. Meiosis produces four genetically unique cells for sexual reproduction. The phases include prophase, metaphase, anaphase, and telophase.',
-      summary:'Cell division was covered in two forms: mitosis produces two genetically identical daughter cells for growth and tissue repair, while meiosis produces four genetically distinct cells for sexual reproduction. Both processes share the sequential phases of prophase, metaphase, anaphase, and telophase.',
-      keyPhrases:['mitosis','meiosis','division','chromosomes','reproduction','prophase','telophase'] },
-  ];
-}
 
 /* ── UTILS ── */
 const $ = id => document.getElementById(id);
