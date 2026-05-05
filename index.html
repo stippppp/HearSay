@@ -2982,7 +2982,7 @@ async function getBartSummary(text) {
     'https://corsproxy.io/?url=https://api-inference.huggingface.co/models/facebook/bart-large-cnn',
     {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         inputs: truncated,
         parameters: {
