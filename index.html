@@ -662,6 +662,17 @@
     }
     .ai-loading span { font-size: 12px; color: var(--primary-light); font-weight: 600; }
 
+    .action-btn-sm {
+      display: flex; align-items: center; gap: 5px;
+      flex: 1; padding: 9px 12px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      background: var(--card); color: var(--primary);
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      font-family: var(--font); transition: background .12s;
+      justify-content: center;
+    }
+    .action-btn-sm:hover { background: var(--bg); }
+    .action-btn-sm:active { transform: scale(.97); }
     .del-btn {
       display: flex; align-items: center; gap: 6px;
       width: 100%; padding: 10px 16px; margin-top: 10px;
@@ -1142,6 +1153,7 @@ const S = {
   prevScreen:    null,
   tab:           'home',
   openSessionId: null,
+  showAllSessions: false,
 };
 
 /* ── STORAGE (settings only in localStorage; data in Supabase) ── */
@@ -1720,7 +1732,24 @@ function renderDashboard() {
       </div>
       <div>
         <div class="section-title">Recent Sessions</div>
-        ${ss.length===0 ? `<p style="font-size:13px;color:var(--text-muted);text-align:center;padding:24px 0">No sessions yet. Start your first session!</p>` :
+        ${ss.length===0 ? `
+          <div style="background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)">
+            <div style="font-size:13px;font-weight:800;color:var(--primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">👋 Getting Started</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <div style="width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+                <span style="font-size:13px;color:var(--text);line-height:1.5">Tap <strong>Record</strong> in the bottom navigation to start a new session.</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <div style="width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+                <span style="font-size:13px;color:var(--text);line-height:1.5">Enter a <strong>subject name</strong>, allow microphone access, and speak naturally.</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <div style="width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+                <span style="font-size:13px;color:var(--text);line-height:1.5">When done, tap <strong>End Session</strong>. HearSay will generate a BART-powered summary automatically.</span>
+              </div>
+            </div>
+          </div>` :
           ss.slice(0,5).map(s=>`
             <button class="session-item" data-sid="${escHtml(s.id)}">
               <div>
@@ -1788,7 +1817,10 @@ function renderSessionLive() {
         ${escHtml(activeLang)}
       </div>
       <div class="transcript-box">
-        <div class="transcript-box-label">Live Transcript</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="transcript-box-label" style="margin-bottom:0">Live Transcript</div>
+          <span id="word-count" style="font-size:11px;font-weight:600;color:var(--text-muted)">0 words</span>
+        </div>
         <div class="transcript-body" id="trans-body">
           <div class="transcript-empty">
             <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
@@ -1840,7 +1872,11 @@ function renderSummaries(filterId) {
           <div class="empty-title">No notes yet</div>
           <div class="empty-sub">Complete a recording session to see your transcript and summary here.</div>
         </div>` :
-        list.map(s => renderSumCard(s, !!filterId)).join('')}
+        (S.showAllSessions ? list : list.slice(0,10)).map(s => renderSumCard(s, !!filterId)).join('') +
+        (!filterId && list.length > 10 ? `
+          <button id="btn-show-all" style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:700;color:var(--primary);cursor:pointer;font-family:var(--font);margin-top:4px">
+            ${S.showAllSessions ? 'Show less' : 'Show all ' + list.length + ' sessions'}
+          </button>` : '')}
     </div>
   </div>`;
 }
@@ -1871,10 +1907,20 @@ function renderSumCard(s, forceOpen=false) {
         <div class="sum-content">
           ${c.tab === 'summary' ? `
             ${s.summaryLoading ? `
-              <div class="ai-loading">
+              <div class="ai-loading" id="ai-loading-${s.id}">
                 <div class="spinner"></div>
-                <span>Generating summary…</span>
-              </div>` : `
+                <span id="ai-loading-label-${s.id}">Generating summary with BART…</span>
+              </div>
+              <script>
+                (function() {
+                  var t = setTimeout(function() {
+                    var el = document.getElementById('ai-loading-label-${s.id}');
+                    if (el) el.textContent = 'This may take a moment on first use…';
+                  }, 8000);
+                  window.__bartHints = window.__bartHints || [];
+                  window.__bartHints.push(t);
+                })();
+              </script>` : `
               <div class="sum-text">${escHtml(s.summary||'No summary available.')}</div>
             `}` : `
             <div class="sum-text">${escHtml(s.transcript||'No transcript available.')}</div>
@@ -1886,6 +1932,16 @@ function renderSumCard(s, forceOpen=false) {
                 ${s.keyPhrases.map(p=>`<span class="chip chip-primary">${escHtml(p)}</span>`).join('')}
               </div>
             </div>` : ''}
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="action-btn-sm" data-copy-text="${c.tab==='summary' ? escHtml(s.summary||'') : escHtml(s.transcript||'')}" data-copy-id="${escHtml(s.id)}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy
+            </button>
+            <button class="action-btn-sm" data-export-id="${escHtml(s.id)}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export .txt
+            </button>
+          </div>
           <button class="del-btn" data-delete="${escHtml(s.id)}">${ic('i-trash',15,15)} Delete this session</button>
         </div>
       </div>` : ''}
@@ -2415,7 +2471,22 @@ function bindEvents() {
   if (s === 'session') {
     $('btn-sess-back')?.addEventListener('click', () => go('dashboard',{tab:'home'}));
     $('btn-start-rec')?.addEventListener('click', async () => {
-      const subj = ($('sess-subject')?.value||'').trim() || 'Untitled Session';
+      const subj = ($('sess-subject')?.value||'').trim();
+      if (!subj) {
+        const input = $('sess-subject');
+        if (input) {
+          input.style.borderColor = 'var(--danger)';
+          input.style.boxShadow   = '0 0 0 3px rgba(217,83,79,.15)';
+          input.placeholder       = 'Please enter a subject name first';
+          input.focus();
+          setTimeout(() => {
+            input.style.borderColor = '';
+            input.style.boxShadow   = '';
+            input.placeholder       = 'e.g. Math 101, Biology, History...';
+          }, 2500);
+        }
+        return;
+      }
       // Request mic permission explicitly before starting — avoids "permission denied" on language change
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -2457,6 +2528,40 @@ function bindEvents() {
     document.querySelectorAll('[data-delete]').forEach(b =>
       b.addEventListener('click', e => { e.stopPropagation(); confirmDelete(b.dataset.delete); })
     );
+    // Copy button
+    document.querySelectorAll('[data-copy-id]').forEach(b =>
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        const text = b.dataset.copyText || '';
+        navigator.clipboard.writeText(text).then(() => {
+          const orig = b.innerHTML;
+          b.textContent = 'Copied!';
+          setTimeout(() => { b.innerHTML = orig; }, 1800);
+        }).catch(() => {
+          b.textContent = 'Failed';
+          setTimeout(() => { b.innerHTML = orig; }, 1800);
+        });
+      })
+    );
+    // Export .txt button
+    document.querySelectorAll('[data-export-id]').forEach(b =>
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        const sess = S.sessions.find(s => s.id === b.dataset.exportId);
+        if (!sess) return;
+        const txt = `HearSay — ${sess.subject}\nDate: ${sess.date}  Duration: ${sess.duration}\n\n--- SUMMARY ---\n${sess.summary || 'N/A'}\n\n--- TRANSCRIPT ---\n${sess.transcript || 'N/A'}\n\n--- KEY PHRASES ---\n${(sess.keyPhrases||[]).join(', ')}`;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+        a.download = (sess.subject || 'session').replace(/[^a-z0-9]/gi,'_') + '.txt';
+        a.click();
+      })
+    );
+    // Show all toggle
+    $('btn-show-all')?.addEventListener('click', e => {
+      e.stopPropagation();
+      S.showAllSessions = !S.showAllSessions;
+      render();
+    });
   }
 
   /* PROFILE */
@@ -2854,6 +2959,12 @@ function updateTranscriptDOM(final, interim) {
     body.innerHTML = highlight(escHtml(savedText), LS.phrases)
       + (interim ? `<span style="color:var(--text-muted);font-style:italic">${escHtml(interim)}</span>` : '');
     body.scrollTop = body.scrollHeight;
+    // Update live word count
+    const wc = document.getElementById('word-count');
+    if (wc) {
+      const wordCount = (savedText + ' ' + interim).trim().split(/\s+/).filter(w=>w).length;
+      wc.textContent = wordCount + (wordCount === 1 ? ' word' : ' words');
+    }
     if (hint) hint.classList.toggle('hidden', !LS.phrases.length);
   } else {
     body.innerHTML = `<div class="transcript-empty"><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><p>Waiting for speech...</p></div>`;
@@ -2867,6 +2978,43 @@ function updateTranscriptDOM(final, interim) {
       pWrap.style.display = 'none';
     }
   }
+}
+
+/* ──────────────────────────────────────────
+   BART SUMMARIZATION (HuggingFace Inference API)
+────────────────────────────────────────── */
+async function getBartSummary(text) {
+  // Truncate to ~1000 words — BART has a token limit
+  const words     = text.trim().split(/\s+/);
+  const truncated = words.slice(0, 1000).join(' ');
+
+  const response = await fetch(
+    'https://corsproxy.io/?url=https://api-inference.huggingface.co/models/facebook/bart-large-cnn',
+    {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer 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' },
+      body: JSON.stringify({
+        inputs: truncated,
+        parameters: {
+          max_length:    180,
+          min_length:    40,
+          do_sample:     false,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) throw new Error('BART API error: ' + response.status);
+  const data = await response.json();
+
+  // HuggingFace returns [{ summary_text: "..." }]
+  if (Array.isArray(data) && data[0]?.summary_text) {
+    return data[0].summary_text;
+  }
+  // Sometimes the model is loading — HuggingFace returns { error: "Loading..." }
+  if (data?.error) throw new Error(data.error);
+
+  throw new Error('Unexpected response from BART');
 }
 
 /* ──────────────────────────────────────────
@@ -2884,14 +3032,35 @@ async function endSession() {
     date:           new Date().toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
     duration:       fmtTime(LS.elapsed),
     transcript:     fullText || 'No speech was captured.',
-    summary:        smartSummary(fullText, LS.subject),
+    summary:        '',
     keyPhrases:     phrases,
-    summaryLoading: false,
+    summaryLoading: true,   // show spinner while BART runs
   };
 
   S.sessions.unshift(session);
   openCards[session.id] = { open: true, tab: 'summary' };
   go('summaries', { tab: 'summaries' });
+
+  // ── Run BART summarization in background ──
+  if (fullText.length > 30) {
+    try {
+      const bartSummary    = await getBartSummary(fullText);
+      session.summary      = bartSummary;
+      session.summaryLoading = false;
+    } catch (err) {
+      console.warn('BART summarization failed, using fallback:', err.message);
+      // Graceful fallback — your original smart summary
+      session.summary      = smartSummary(fullText, LS.subject);
+      session.summaryLoading = false;
+    }
+  } else {
+    // Too short for BART — use fallback immediately
+    session.summary        = fullText ? smartSummary(fullText, LS.subject) : 'No significant content was captured.';
+    session.summaryLoading = false;
+  }
+
+  // Re-render so the summary replaces the spinner
+  if (S.screen === 'summaries' || S.screen === 'session-detail') render();
 
   // Save to Supabase in background
   if (S.user?.id) {
@@ -2955,7 +3124,7 @@ function openTncModal() {
         <h3>10. Contact</h3>
         <p>If you have questions about these Terms and Conditions, please contact the HearSay team through your institution's official channels.</p>
 
-        <p style="margin-top:16px;font-size:11.5px;color:var(--text-muted);font-style:italic">Last updated: May 2025</p>
+        <p style="margin-top:16px;font-size:11.5px;color:var(--text-muted);font-style:italic">Last updated: May 2026</p>
       </div>
       <div class="tnc-modal-footer">
         <div class="tnc-read-indicator" id="tnc-read-indicator">
@@ -3074,6 +3243,26 @@ async function init() {
 }
 
 init();
+
+// ── OFFLINE DETECTION ──
+function showToast(msg, type='info') {
+  const existing = document.getElementById('hs-toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'hs-toast';
+  toast.style.cssText = `
+    position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);
+    background:${type==='error'?'#d9534f':type==='success'?'#2e7d32':'#1a3c6e'};
+    color:#fff;font-size:13px;font-weight:600;padding:10px 20px;border-radius:24px;
+    box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:9999;white-space:nowrap;
+    animation:fadeIn .2s ease-out;font-family:var(--font);
+  `;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+window.addEventListener('offline', () => showToast('⚠️ You are offline. BART and sync require internet.', 'error'));
+window.addEventListener('online',  () => showToast('✅ Back online!', 'success'));
 </script>
 </body>
 </html>
