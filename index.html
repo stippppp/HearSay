@@ -2092,7 +2092,7 @@ function renderSettings() {
           <div class="settings-row">
             <span class="settings-row-label">Language</span>
             <select class="lang-select" id="sel-lang">
-              ${['English','Filipino','Tagalog','Cebuano','Spanish','Japanese','Korean','Chinese'].map(l=>`<option${language===l?' selected':''}>${l}</option>`).join('')}
+              ${['English','Filipino'].map(l=>`<option${language===l?' selected':''}>${l}</option>`).join('')}
             </select>
           </div>
           <div class="settings-row">
