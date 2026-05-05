@@ -2973,7 +2973,7 @@ function updateTranscriptDOM(final, interim) {
 /* ──────────────────────────────────────────
    BART SUMMARIZATION (HuggingFace Inference API)
 ────────────────────────────────────────── */
-async function getBartSummary(text) {
+async function getBartSummary(text, retries = 2) {
   // Truncate to ~1000 words — BART has a token limit
   const words     = text.trim().split(/\s+/);
   const truncated = words.slice(0, 1000).join(' ');
@@ -2995,14 +2995,32 @@ async function getBartSummary(text) {
   );
 
   if (!response.ok) throw new Error('BART API error: ' + response.status);
-  const data = await response.json();
+
+  // Safely parse JSON — HuggingFace may return HTML on errors
+  let data;
+  try {
+    data = await response.json();
+  } catch (e) {
+    throw new Error('HuggingFace returned invalid JSON (possible auth or model error)');
+  }
 
   // HuggingFace returns [{ summary_text: "..." }]
   if (Array.isArray(data) && data[0]?.summary_text) {
     return data[0].summary_text;
   }
-  // Sometimes the model is loading — HuggingFace returns { error: "Loading..." }
-  if (data?.error) throw new Error(data.error);
+
+  // Model is cold-starting — HuggingFace returns { error: "Loading...", estimated_time: N }
+  if (data?.error) {
+    if (retries > 0 && (data.error.toLowerCase().includes('load') || data.estimated_time)) {
+      const waitMs = Math.min((data.estimated_time || 20) * 1000, 25000);
+      // Update loading label if visible
+      const labels = document.querySelectorAll('[id^="ai-loading-label-"]');
+      labels.forEach(l => l.textContent = `Model is warming up, retrying in ${Math.round(waitMs/1000)}s…`);
+      await new Promise(r => setTimeout(r, waitMs));
+      return getBartSummary(text, retries - 1);
+    }
+    throw new Error(data.error);
+  }
 
   throw new Error('Unexpected response from BART');
 }
@@ -3040,13 +3058,12 @@ async function endSession() {
   // ── Run BART summarization in background ──
   if (fullText.length > 30) {
     try {
-      const bartSummary    = await getBartSummary(fullText);
-      session.summary      = bartSummary;
+      const bartSummary      = await getBartSummary(fullText);
+      session.summary        = bartSummary;
       session.summaryLoading = false;
     } catch (err) {
       console.warn('BART summarization failed, using fallback:', err.message);
-      // Graceful fallback — your original smart summary
-      session.summary      = smartSummary(fullText, LS.subject);
+      session.summary        = smartSummary(fullText, LS.subject);
       session.summaryLoading = false;
     } finally {
       clearTimeout(hintTimer);
@@ -3055,12 +3072,13 @@ async function endSession() {
     // Too short for BART — use fallback immediately
     session.summary        = fullText ? smartSummary(fullText, LS.subject) : 'No significant content was captured.';
     session.summaryLoading = false;
+    clearTimeout(hintTimer);
   }
 
   // Re-render so the summary replaces the spinner
   if (S.screen === 'summaries' || S.screen === 'session-detail') render();
 
-  // Save to Supabase in background
+  // Save to Supabase AFTER summary is ready so the correct summary gets stored
   if (S.user?.id) {
     sb.from('sessions').insert({
       id:          session.id,
