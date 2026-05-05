@@ -501,7 +501,7 @@
     .cta-info strong { font-size: 15px; font-weight: 700; color: #fff; display: block; }
     .cta-info span { font-size: 13px; color: rgba(255,255,255,.75); }
 
-    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
     .stat-card { background: var(--card); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-card); }
     .stat-label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .06em; }
     .stat-val { font-size: 30px; font-weight: 800; color: var(--primary); letter-spacing: -.5px; }
@@ -663,16 +663,21 @@
     .ai-loading span { font-size: 12px; color: var(--primary-light); font-weight: 600; }
 
     .action-btn-sm {
-      display: flex; align-items: center; gap: 5px;
-      flex: 1; padding: 9px 12px;
+      display: flex; align-items: center; gap: 4px;
+      flex: 1; min-width: 0; padding: 9px 6px;
       border: 1.5px solid var(--border); border-radius: var(--radius);
       background: var(--card); color: var(--primary);
-      font-size: 12px; font-weight: 700; cursor: pointer;
+      font-size: 11.5px; font-weight: 700; cursor: pointer;
       font-family: var(--font); transition: background .12s;
-      justify-content: center;
+      justify-content: center; white-space: nowrap;
     }
     .action-btn-sm:hover { background: var(--bg); }
     .action-btn-sm:active { transform: scale(.97); }
+    /* On very narrow phones, wrap into two rows */
+    @media (max-width: 360px) {
+      .sum-actions { flex-wrap: wrap !important; }
+      .action-btn-sm { flex: 1 1 calc(50% - 4px); }
+    }
     .del-btn {
       display: flex; align-items: center; gap: 6px;
       width: 100%; padding: 10px 16px; margin-top: 10px;
@@ -702,6 +707,33 @@
     .del-confirm-actions { display: flex; gap: 10px; margin-top: 4px; }
     .del-keep { flex:1; padding:12px; border:1.5px solid var(--border); border-radius:var(--radius); background:none; cursor:pointer; font-size:14px; font-weight:600; color:var(--text); font-family:var(--font); }
     .del-go   { flex:1; padding:12px; border:none; border-radius:var(--radius); background:var(--danger); cursor:pointer; font-size:14px; font-weight:700; color:#fff; font-family:var(--font); }
+
+    /* ── Notes Search Bar ── */
+    .notes-search-wrap {
+      padding: 10px 16px 4px;
+      position: relative;
+    }
+    .notes-search-input {
+      width: 100%; padding: 10px 14px 10px 38px;
+      border-radius: 12px; border: 1.5px solid var(--border);
+      background: var(--card); font-family: var(--font);
+      font-size: 14px; color: var(--text); outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      box-shadow: var(--shadow-card);
+      /* prevent zoom on iOS (font-size must be >=16px for inputs to avoid auto-zoom) */
+      font-size: max(16px, 14px);
+      -webkit-appearance: none;
+      box-sizing: border-box;
+    }
+    .notes-search-input::placeholder { color: var(--text-muted); }
+    .notes-search-input:focus { border-color: var(--primary-lighter); box-shadow: 0 0 0 3px rgba(74,144,217,.15); }
+    /* Clear (×) button that browsers add to search inputs */
+    .notes-search-input::-webkit-search-cancel-button { cursor: pointer; }
+    .notes-search-icon {
+      position: absolute; left: 28px; top: 50%; transform: translateY(-50%);
+      pointer-events: none;
+    }
+    .notes-search-icon svg { stroke: var(--text-muted); width: 16px; height: 16px; }
 
     .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 24px; gap: 16px; text-align: center; }
     .empty-icon { width: 64px; height: 64px; border-radius: 20px; background: var(--primary-muted); display: flex; align-items: center; justify-content: center; }
@@ -1035,7 +1067,7 @@
       }
       .page-header, .dash-header { padding-top: 24px !important; }
       .login-header { padding-top: 32px !important; }
-      .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
+      .stats-grid { grid-template-columns: repeat(3, 1fr) !important; }
       .session-setup { padding: 48px 60px !important; max-width: 700px; margin: 0 auto; width: 100%; }
       .del-confirm-box { max-width: 480px !important; border-radius: 20px !important; }
     }
@@ -1425,6 +1457,8 @@ function openMenuDrawer() {
 /* ── NAVIGATION ── */
 function go(screen, opts={}) {
   if (window._waveCleanup) { window._waveCleanup(); window._waveCleanup = null; }
+  // Clear notes search when leaving notes screen
+  if (S.screen === 'summaries' && screen !== 'summaries') notesSearchQuery = '';
   S.prevScreen = S.screen;
   S.screen = screen;
   if (opts.tab !== undefined) S.tab = opts.tab;
@@ -1649,7 +1683,7 @@ function renderLogin() {
         </div>
         <div class="input-group">
           <label class="input-label" for="r-section">Section</label>
-          <input id="r-section" class="input" type="text" placeholder="e.g. 2B" />
+          <input id="r-section" class="input" type="text" placeholder="e.g. 2B" oninput="this.value=this.value.replace(/[^a-zA-Z0-9\-]/g,'')" maxlength="10" />
         </div>
         <div class="input-group">
           <label class="input-label" for="r-pw">Password</label>
@@ -1729,25 +1763,21 @@ function renderDashboard() {
           <div class="stat-label">Summaries</div>
           <div class="stat-val">${ss.filter(s=>s.summary).length}</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">Words</div>
+          <div class="stat-val">${ss.reduce((acc,s)=>acc+(s.transcript?s.transcript.trim().split(/\s+/).filter(Boolean).length:0),0)}</div>
+        </div>
       </div>
       <div>
         <div class="section-title">Recent Sessions</div>
         ${ss.length===0 ? `
-          <div style="background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-card);border:1.5px solid var(--border)">
-            <div style="font-size:13px;font-weight:800;color:var(--primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">👋 Getting Started</div>
-            <div style="display:flex;flex-direction:column;gap:10px">
-              <div style="display:flex;align-items:flex-start;gap:10px">
-                <div style="width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-                <span style="font-size:13px;color:var(--text);line-height:1.5">Tap <strong>Record</strong> in the bottom navigation to start a new session.</span>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:10px">
-                <div style="width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
-                <span style="font-size:13px;color:var(--text);line-height:1.5">Enter a <strong>subject name</strong>, allow microphone access, and speak naturally.</span>
-              </div>
-              <div style="display:flex;align-items:flex-start;gap:10px">
-                <div style="width:22px;height:22px;border-radius:50%;background:var(--grad);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
-                <span style="font-size:13px;color:var(--text);line-height:1.5">When done, tap <strong>End Session</strong>. HearSay will generate a BART-powered summary automatically.</span>
-              </div>
+          <div style="background:var(--card);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-card);border:1.5px dashed var(--border);display:flex;align-items:flex-start;gap:12px">
+            <div style="width:32px;height:32px;border-radius:10px;background:var(--primary-muted);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M9 1a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z"/><path d="M15 8v1a6 6 0 0 1-12 0V8"/><line x1="9" y1="15" x2="9" y2="18"/></svg>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">No sessions yet</div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.55">Tap <strong>Start New Session</strong> above, enter a subject, and speak — HearSay will transcribe and summarize for you.</div>
             </div>
           </div>` :
           ss.slice(0,5).map(s=>`
@@ -1852,9 +1882,18 @@ function menuBtn() {
 
 /* ── SUMMARIES / SESSION DETAIL ── */
 const openCards = {};
+let notesSearchQuery = '';
 function renderSummaries(filterId) {
-  const list = filterId ? S.sessions.filter(s=>s.id===filterId) : S.sessions;
-  const backTarget = filterId ? 'summaries' : null;
+  const allList = filterId ? S.sessions.filter(s=>s.id===filterId) : S.sessions;
+  // Apply search filter (only on the notes list, not session detail)
+  const q = notesSearchQuery.trim().toLowerCase();
+  const list = (!filterId && q)
+    ? allList.filter(s =>
+        (s.subject||'').toLowerCase().includes(q) ||
+        (s.summary||'').toLowerCase().includes(q) ||
+        (s.transcript||'').toLowerCase().includes(q) ||
+        (s.date||'').toLowerCase().includes(q))
+    : allList;
   const backBtn = filterId
     ? `<button class="icon-btn" id="btn-sum-back">${ic('i-back',20,20)}</button>`
     : `<div style="width:36px"></div>`;
@@ -1864,13 +1903,22 @@ function renderSummaries(filterId) {
       <span class="page-title">${filterId ? 'Session Details' : 'My Notes'}</span>
       ${menuBtn()}
     </div>
+    ${!filterId ? `
+    <div class="notes-search-wrap">
+      <div style="position:relative">
+        <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;display:flex;align-items:center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--text-muted)"><circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+        </div>
+        <input id="notes-search" class="notes-search-input" type="search" placeholder="Search sessions…" value="${escHtml(notesSearchQuery)}" autocomplete="off" />
+      </div>
+    </div>` : ''}
     <div class="summaries-body">
-      ${!filterId && list.length ? `<p class="summary-count">${list.length} session${list.length!==1?'s':''} saved</p>` : ''}
+      ${!filterId && allList.length ? `<p class="summary-count">${q ? list.length + ' result' + (list.length!==1?'s':'') + ' of ' + allList.length : allList.length + ' session' + (allList.length!==1?'s':'')} saved</p>` : ''}
       ${list.length === 0 ? `
         <div class="empty-state">
           <div class="empty-icon">${ic('i-file',28,28)}</div>
-          <div class="empty-title">No notes yet</div>
-          <div class="empty-sub">Complete a recording session to see your transcript and summary here.</div>
+          <div class="empty-title">${q ? 'No results found' : 'No notes yet'}</div>
+          <div class="empty-sub">${q ? `No sessions match "<strong>${escHtml(q)}</strong>". Try a different keyword.` : 'Complete a recording session to see your transcript and summary here.'}</div>
         </div>` :
         (S.showAllSessions ? list : list.slice(0,10)).map(s => renderSumCard(s, !!filterId)).join('') +
         (!filterId && list.length > 10 ? `
@@ -1922,7 +1970,7 @@ function renderSumCard(s, forceOpen=false) {
                 ${s.keyPhrases.map(p=>`<span class="chip chip-primary">${escHtml(p)}</span>`).join('')}
               </div>
             </div>` : ''}
-          <div style="display:flex;gap:8px;margin-top:10px">
+          <div class="sum-actions" style="display:flex;gap:6px;margin-top:10px">
             <button class="action-btn-sm" data-copy-text="${c.tab==='summary' ? escHtml(s.summary||'') : escHtml(s.transcript||'')}" data-copy-id="${escHtml(s.id)}">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               Copy
@@ -1930,6 +1978,10 @@ function renderSumCard(s, forceOpen=false) {
             <button class="action-btn-sm" data-export-id="${escHtml(s.id)}">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Export .txt
+            </button>
+            <button class="action-btn-sm" data-export-pdf-id="${escHtml(s.id)}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+              PDF
             </button>
           </div>
           <button class="del-btn" data-delete="${escHtml(s.id)}">${ic('i-trash',15,15)} Delete this session</button>
@@ -2041,7 +2093,7 @@ function renderSettings() {
           <div class="settings-row">
             <span class="settings-row-label">Language</span>
             <select class="lang-select" id="sel-lang">
-              ${['English','Filipino'].map(l=>`<option${language===l?' selected':''}>${l}</option>`).join('')}
+              ${['English','Filipino','Tagalog','Cebuano','Spanish','Japanese','Korean','Chinese'].map(l=>`<option${language===l?' selected':''}>${l}</option>`).join('')}
             </select>
           </div>
           <div class="settings-row">
@@ -2478,11 +2530,12 @@ function bindEvents() {
         return;
       }
       // Request mic permission explicitly before starting — avoids "permission denied" on language change
+      const btn = $('btn-start-rec');
+      if (btn) { btn.textContent = 'Requesting mic…'; btn.disabled = true; }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(t => t.stop()); // release immediately, SpeechRecognition will re-request
       } catch(err) {
-        const btn = $('btn-start-rec');
         if (btn) {
           btn.textContent = '🎤 Mic permission denied. Check browser settings.';
           btn.disabled = true;
@@ -2490,6 +2543,7 @@ function bindEvents() {
         }
         return;
       }
+      if (btn) { btn.textContent = 'Start Recording'; btn.disabled = false; }
       startLiveSession(subj);
     });
     $('sess-subject')?.addEventListener('keydown', e => { if(e.key==='Enter') $('btn-start-rec')?.click(); });
@@ -2500,7 +2554,27 @@ function bindEvents() {
     $('btn-mic')?.addEventListener('click', () => {
       if (LS.isRecording) pauseRecognition(); else resumeRecognition();
     });
-    $('btn-end')?.addEventListener('click', endSession);
+    $('btn-end')?.addEventListener('click', () => {
+      // Show a quick confirm bottom sheet before ending
+      const existing = document.getElementById('end-confirm-overlay');
+      if (existing) return;
+      const overlay = document.createElement('div');
+      overlay.id = 'end-confirm-overlay';
+      overlay.className = 'del-confirm';
+      overlay.innerHTML = `
+        <div class="del-confirm-box">
+          <div class="del-confirm-title">End Session?</div>
+          <div class="del-confirm-sub">This will stop recording and generate your summary.</div>
+          <div class="del-confirm-actions">
+            <button class="del-keep" id="end-keep-btn">Keep Recording</button>
+            <button class="del-go" id="end-go-btn" style="background:var(--primary)">End Session</button>
+          </div>
+        </div>`;
+      document.getElementById('app').appendChild(overlay);
+      document.getElementById('end-keep-btn').addEventListener('click', () => overlay.remove());
+      document.getElementById('end-go-btn').addEventListener('click', () => { overlay.remove(); endSession(); });
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    });
   }
 
   /* SUMMARIES / SESSION DETAIL */
@@ -2523,16 +2597,30 @@ function bindEvents() {
       b.addEventListener('click', e => {
         e.stopPropagation();
         const text = b.dataset.copyText || '';
+        const orig = b.innerHTML;
         navigator.clipboard.writeText(text).then(() => {
-          const orig = b.innerHTML;
-          b.textContent = 'Copied!';
-          setTimeout(() => { b.innerHTML = orig; }, 1800);
+          b.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" style="stroke:var(--success);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+          b.style.color = 'var(--success)';
+          b.style.borderColor = 'var(--success)';
+          setTimeout(() => { b.innerHTML = orig; b.style.color=''; b.style.borderColor=''; }, 1800);
         }).catch(() => {
           b.textContent = 'Failed';
           setTimeout(() => { b.innerHTML = orig; }, 1800);
         });
       })
     );
+    // Search bar
+    const searchInput = $('notes-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', e => {
+        notesSearchQuery = e.target.value;
+        S.showAllSessions = false;
+        render();
+        // Re-focus the search input and restore caret position
+        const el = $('notes-search');
+        if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+      });
+    }
     // Export .txt button
     document.querySelectorAll('[data-export-id]').forEach(b =>
       b.addEventListener('click', e => {
@@ -2541,9 +2629,45 @@ function bindEvents() {
         if (!sess) return;
         const txt = `HearSay — ${sess.subject}\nDate: ${sess.date}  Duration: ${sess.duration}\n\n--- SUMMARY ---\n${sess.summary || 'N/A'}\n\n--- TRANSCRIPT ---\n${sess.transcript || 'N/A'}\n\n--- KEY PHRASES ---\n${(sess.keyPhrases||[]).join(', ')}`;
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+        const url = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+        a.href = url;
         a.download = (sess.subject || 'session').replace(/[^a-z0-9]/gi,'_') + '.txt';
         a.click();
+        URL.revokeObjectURL(url);
+      })
+    );
+    // Export PDF button
+    document.querySelectorAll('[data-export-pdf-id]').forEach(b =>
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        const sess = S.sessions.find(s => s.id === b.dataset.exportPdfId);
+        if (!sess) return;
+        const win = window.open('', '_blank');
+        if (!win) { showToast('Pop-up blocked. Please allow pop-ups.', 'error'); return; }
+        const safeSubject = escHtml(sess.subject || 'Session');
+        const safeDate    = escHtml(sess.date || '');
+        const safeDur     = escHtml(sess.duration || '—');
+        const safeSummary = escHtml(sess.summary || 'N/A').replace(/\n/g,'<br>');
+        const safeTrans   = escHtml(sess.transcript || 'N/A').replace(/\n/g,'<br>');
+        const safePhrases = (sess.keyPhrases||[]).map(p=>`<span style="display:inline-block;background:#d0e8f8;color:#1a3c6e;border-radius:20px;padding:3px 10px;margin:2px;font-size:12px;font-weight:600">${escHtml(p)}</span>`).join('');
+        win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HearSay — ${safeSubject}</title>
+          <style>
+            body{font-family:'Segoe UI',Arial,sans-serif;max-width:720px;margin:40px auto;color:#1a3c6e;padding:0 24px}
+            h1{font-size:24px;font-weight:800;margin-bottom:4px}
+            .meta{font-size:13px;color:#7a9cbf;margin-bottom:28px}
+            h2{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#1a3c6e;margin:24px 0 8px;padding-bottom:6px;border-bottom:2px solid #cce0f5}
+            p{font-size:14px;line-height:1.8;color:#2a3a5a}
+            .phrases{margin-top:8px}
+            @media print{body{margin:20px}}
+          </style></head><body>
+          <h1>${safeSubject}</h1>
+          <div class="meta">📅 ${safeDate} &nbsp;·&nbsp; ⏱ ${safeDur}</div>
+          <h2>Summary</h2><p>${safeSummary}</p>
+          <h2>Transcript</h2><p>${safeTrans}</p>
+          ${safePhrases ? `<h2>Key Phrases</h2><div class="phrases">${safePhrases}</div>` : ''}
+          <script>window.onload=()=>{window.print();}<\/script>
+        </body></html>`);
+        win.document.close();
       })
     );
     // Show all toggle
@@ -2793,8 +2917,14 @@ function startLiveSession(subject) {
 /* ── LANGUAGE MAP ── */
 function getLangCode(language) {
   const langMap = {
-    'English':  'en-US',
-    'Filipino': 'fil-PH',
+    'English':   'en-US',
+    'Filipino':  'fil-PH',
+    'Tagalog':   'fil-PH',
+    'Cebuano':   'ceb',
+    'Spanish':   'es-ES',
+    'Japanese':  'ja-JP',
+    'Korean':    'ko-KR',
+    'Chinese':   'zh-CN',
   };
   return langMap[language] || 'en-US';
 }
