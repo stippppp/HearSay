@@ -2787,7 +2787,7 @@ function startLiveSession(subject) {
     if (el) el.textContent = fmtTime(LS.elapsed);
   }, 1000);
 
-  setTimeout(() => startRecognition(), 100);
+  startRecognition();
 }
 
 /* ── LANGUAGE MAP ── */
@@ -2797,6 +2797,24 @@ function getLangCode(language) {
     'Filipino': 'fil-PH',
   };
   return langMap[language] || 'en-US';
+}
+
+/* ── DOM UPDATE THROTTLE ── */
+let _domThrottle = null;
+let _pendingFinal = '';
+let _pendingInterim = '';
+
+function flushTranscriptDOM() {
+  _domThrottle = null;
+  updateTranscriptDOM(_pendingFinal, _pendingInterim);
+}
+
+function scheduleTranscriptUpdate(final, interim) {
+  _pendingFinal  = final;
+  _pendingInterim = interim;
+  if (!_domThrottle) {
+    _domThrottle = requestAnimationFrame(flushTranscriptDOM);
+  }
 }
 
 function startRecognition() {
@@ -2812,13 +2830,21 @@ function startRecognition() {
   // Don't start if already running
   if (LS.recognition) return;
 
-  // Always create a fresh instance — reusing instances can cause lang to be ignored
   const r = new SR();
   r.continuous      = true;
   r.interimResults  = true;
-  // Use the language snapshotted at session start (LS.lang), not the live setting
   r.lang            = LS.lang;
   r.maxAlternatives = 1;
+
+  // grammars hint: nudges the engine to stay active (no-op on most browsers, harmless)
+  try {
+    const SRG = window.SpeechGrammarList || window.webkitSpeechGrammarList;
+    if (SRG) {
+      const list = new SRG();
+      list.addFromString('#JSGF V1.0;', 1);
+      r.grammars = list;
+    }
+  } catch(_) {}
 
   r.onstart = () => {
     LS.isRecording = true;
@@ -2833,11 +2859,14 @@ function startRecognition() {
       if (ev.results[i].isFinal) final += ev.results[i][0].transcript + ' ';
       else interim += ev.results[i][0].transcript;
     }
-    LS.transcript = final;
-    // Also save interim immediately so it survives a recognition restart
+    LS.transcript    = final;
     LS.interimBuffer = interim;
-    LS.phrases = keyPhrases(final + interim);
-    updateTranscriptDOM(final, interim);
+    // Key phrases only computed on final text (cheaper)
+    if (ev.results[ev.results.length - 1].isFinal) {
+      LS.phrases = keyPhrases(final);
+    }
+    // Throttle DOM writes via rAF so rapid results don't thrash layout
+    scheduleTranscriptUpdate(final, interim);
   };
 
   r.onerror = (ev) => {
@@ -2850,7 +2879,6 @@ function startRecognition() {
       const lb = $('slabel');
       if (lb) lb.textContent = 'Microphone permission denied. Please allow mic access in your browser settings and try again.';
     } else if (ev.error === 'language-not-supported') {
-      // Fall back to English and make sure LS.lang is also updated
       S.settings.language = 'English';
       LS.lang = 'en-US';
       persistSettings();
@@ -2859,22 +2887,22 @@ function startRecognition() {
         setTimeout(() => startRecognition(), 300);
       }
     }
-    // All other errors: ignore, onend will handle restart
+    // 'no-speech' and 'audio-capture' are transient — onend will restart
   };
 
   r.onend = () => {
     // Commit any buffered interim text as final before restarting
     if (LS.interimBuffer && LS.interimBuffer.trim()) {
-      LS.transcript += LS.interimBuffer + ' ';
+      LS.transcript   += LS.interimBuffer + ' ';
       LS.interimBuffer = '';
     }
     LS.recognition = null;
-    // Only restart if session is active AND not paused by user
     if (LS.active && !LS.paused) {
       if (LS.restartTimeout) clearTimeout(LS.restartTimeout);
+      // Reduced restart delay: 80 ms instead of 200 ms — near-instant pickup
       LS.restartTimeout = setTimeout(() => {
         if (LS.active && !LS.paused) startRecognition();
-      }, 200);
+      }, 80);
     } else {
       LS.isRecording = false;
       updateLiveUI();
@@ -2917,6 +2945,7 @@ function stopRecognition() {
   LS.paused      = false;
   LS.isRecording = false;
   if (LS.restartTimeout) { clearTimeout(LS.restartTimeout); LS.restartTimeout = null; }
+  if (_domThrottle)      { cancelAnimationFrame(_domThrottle); _domThrottle = null; }
   if (LS.recognition) {
     try { LS.recognition.abort(); } catch(_){}
     LS.recognition = null;
