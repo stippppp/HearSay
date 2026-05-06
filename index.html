@@ -1669,7 +1669,6 @@ function renderVerifyEmail() {
     </div>
     <div class="login-body" style="align-items:center;text-align:center;padding-top:40px;padding-bottom:56px;gap:16px">
       ${!sent ? `
-        <div style="font-size:52px;margin-bottom:4px">✉️</div>
         <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px">Verify your email</div>
         <p style="font-size:14px;color:var(--text-muted);line-height:1.65;max-width:300px;margin:0 auto">
           Your account is ready! Click the button below to send a verification email to:<br><br>
@@ -1686,7 +1685,6 @@ function renderVerifyEmail() {
         <button id="btn-send-verify" class="btn btn-primary" style="max-width:300px">Send Verification Email</button>
         <button id="btn-verify-login" class="btn btn-outline" style="max-width:300px;margin-top:-4px">Back to Login</button>
       ` : `
-        <div style="font-size:52px;margin-bottom:4px">📬</div>
         <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px">Email sent!</div>
         <p style="font-size:14px;color:var(--text-muted);line-height:1.65;max-width:300px;margin:0 auto">
           We sent a verification link to<br>
@@ -1898,7 +1896,7 @@ function renderDashboard() {
               <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:5px">No sessions yet</div>
               <div style="font-size:13px;color:var(--text-muted);line-height:1.6;max-width:240px;margin:0 auto">Start your first recording to see your notes here. Tap the button above to begin!</div>
             </div>
-            <button class="btn btn-primary" id="btn-empty-start" style="max-width:220px;padding:12px 20px;font-size:14px">🎤 Start First Session</button>
+            <button class="btn btn-primary" id="btn-empty-start" style="max-width:220px;padding:12px 20px;font-size:14px">Start First Session</button>
           </div>` :
           ss.slice(0,5).map(s=>`
             <button class="session-item" data-sid="${escHtml(s.id)}">
@@ -2780,12 +2778,28 @@ function bindEvents() {
         const acct = await sbSignIn(email, pw);
         doLogin(acct);
       } catch(e) {
-        const friendly =
-          e.message?.includes('row-level security') ? 'Login is temporarily unavailable. Please try again shortly.' :
-          e.message?.includes('Invalid login')      ? 'Incorrect Student ID or password. Please try again.' :
-          e.message?.includes('Email not confirmed') ? 'Please verify your email first before logging in.' :
-          e.message?.includes('Profile not found')  ? 'Account not found. Please register first.' :
-          e.message || 'Login failed. Check your Student ID and password.';
+        let friendly;
+        if (e.message?.includes('row-level security')) {
+          friendly = 'Login is temporarily unavailable. Please try again shortly.';
+        } else if (e.message?.includes('Email not confirmed')) {
+          friendly = 'Please verify your email first before logging in.';
+        } else if (e.message?.includes('Profile not found')) {
+          friendly = 'No account found with this Student ID. Please register first.';
+        } else if (e.message?.includes('Invalid login')) {
+          // Distinguish "no account" from "wrong password" by checking if email exists in profiles
+          try {
+            const { data: existing } = await sb.from('profiles').select('id').eq('email', email).maybeSingle();
+            if (existing) {
+              friendly = 'Incorrect password. Please try again.';
+            } else {
+              friendly = 'No account found with this Student ID. Please register first.';
+            }
+          } catch(_) {
+            friendly = 'Incorrect Student ID or password. Please try again.';
+          }
+        } else {
+          friendly = e.message || 'Login failed. Check your Student ID and password.';
+        }
         showMsg(msg, friendly);
       } finally {
         if (btn) { btn.textContent = 'Log In'; btn.disabled = false; }
@@ -3753,6 +3767,24 @@ async function init() {
     window._hsResetChannel = bc;
   } catch(_) {}
 
+  // ── LISTEN for handoff from a newly-opened email-verification tab ──
+  try {
+    const bcv = new BroadcastChannel('hs_verify');
+    bcv.onmessage = e => {
+      if (e.data?.type === 'VERIFY_HANDOFF') {
+        // Acknowledge so the new tab knows to close
+        const ack = new BroadcastChannel('hs_verify');
+        ack.postMessage({ type: 'VERIFY_ACK' });
+        ack.close();
+        bcv.close();
+        // Show the email-verified success screen in this existing tab
+        S.screen = 'email-verified';
+        render();
+      }
+    };
+    window._hsVerifyChannel = bcv;
+  } catch(_) {}
+
   continueInit();
 }
 
@@ -3788,11 +3820,41 @@ async function continueInit() {
   const isPasswordRecovery = hash.includes('type=recovery') || hash.includes('type=magiclink');
   const isEmailVerification = hash.includes('type=signup');
 
-  // Email verification link clicked — show success screen then auto-go to login
+  // Email verification link clicked — hand off to existing tab if one is open
   if (isEmailVerification) {
     history.replaceState(null, '', window.location.pathname);
-    S.screen = 'email-verified';
-    render();
+    let handedOff = false;
+    try {
+      const bcSend = new BroadcastChannel('hs_verify');
+      bcSend.postMessage({ type: 'VERIFY_HANDOFF' });
+      bcSend.close();
+
+      const bcAck = new BroadcastChannel('hs_verify');
+      bcAck.onmessage = e => {
+        if (e.data?.type === 'VERIFY_ACK') {
+          handedOff = true;
+          bcAck.close();
+          document.getElementById('app').innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;flex:1;width:100%;flex-direction:column;gap:16px;min-height:100vh;min-height:100dvh">
+              <div style="width:48px;height:48px;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" style="stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div style="font-size:13px;color:var(--text-muted);font-weight:600">Email verified! Returning to your tab...</div>
+            </div>`;
+          setTimeout(() => window.close(), 800);
+        }
+      };
+      setTimeout(() => {
+        if (!handedOff) {
+          bcAck.close();
+          S.screen = 'email-verified';
+          render();
+        }
+      }, 500);
+    } catch(_) {
+      S.screen = 'email-verified';
+      render();
+    }
     return;
   }
 
