@@ -3481,44 +3481,90 @@ function updateTranscriptDOM(final, interim) {
 
 /* ──────────────────────────────────────────
    GEMINI SUMMARIZATION (Google Generative Language API)
+   • Retries up to 3× on 429 with exponential back-off
+   • Falls back to gemini-2.0-flash-lite on repeated failure
+   • Final AI fallback: Claude via Anthropic API
 ────────────────────────────────────────── */
-async function getGeminiSummary(text) {
-  // Truncate to ~1000 words to keep the prompt concise
-  const words     = text.trim().split(/\s+/);
-  const truncated = words.slice(0, 1000).join(' ');
+const GEMINI_KEY    = 'AIzaSyARnKsFp2fELJbDBkFtD_KoBDt6T40BFrk';
+const GEMINI_PROMPT = (t) =>
+  `Summarize the following classroom transcript into a single concise paragraph that captures the key topics and takeaways. Use proper punctuation and grammar. Return only the summary paragraph, no preamble.\n\nTranscript:\n${t}`;
 
-  const response = await fetch(
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyARnKsFp2fELJbDBkFtD_KoBDt6T40BFrk',
+async function _callGemini(model, truncated) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`,
     {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Summarize the following classroom transcript into a single concise paragraph that captures the key topics and takeaways. Return only the summary paragraph, no preamble.\n\nTranscript:\n${truncated}`,
-          }],
-        }],
-        generationConfig: {
-          maxOutputTokens: 300,
-          temperature:     0.3,
-        },
+        contents: [{ parts: [{ text: GEMINI_PROMPT(truncated) }] }],
+        generationConfig: { maxOutputTokens: 300, temperature: 0.3 },
       }),
     }
   );
-
-  if (!response.ok) throw new Error('Gemini API error: ' + response.status);
-
+  if (res.status === 429) throw Object.assign(new Error('rate_limit'), { status: 429 });
+  if (!res.ok)            throw new Error('Gemini API error: ' + res.status);
   let data;
-  try {
-    data = await response.json();
-  } catch (e) {
-    throw new Error('Gemini returned invalid JSON');
-  }
-
+  try { data = await res.json(); } catch { throw new Error('Gemini returned invalid JSON'); }
   const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
   if (summary) return summary;
-
   throw new Error('Unexpected response from Gemini');
+}
+
+async function _callClaude(truncated) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: 300,
+      messages:   [{ role: 'user', content: GEMINI_PROMPT(truncated) }],
+    }),
+  });
+  if (!res.ok) throw new Error('Claude API error: ' + res.status);
+  let data;
+  try { data = await res.json(); } catch { throw new Error('Claude returned invalid JSON'); }
+  const summary = data?.content?.[0]?.text?.trim();
+  if (summary) return summary;
+  throw new Error('Unexpected response from Claude');
+}
+
+async function getGeminiSummary(text, labelId) {
+  const words     = text.trim().split(/\s+/);
+  const truncated = words.slice(0, 1000).join(' ');
+
+  const updateLabel = (msg) => {
+    const el = labelId ? document.getElementById(labelId) : null;
+    if (el) el.textContent = msg;
+  };
+
+  // ── Try gemini-2.0-flash with up to 3 retries on 429 ──
+  const MODELS  = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+  const DELAYS  = [5000, 15000, 30000]; // back-off: 5s, 15s, 30s
+
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt <= DELAYS.length; attempt++) {
+      try {
+        updateLabel(attempt === 0
+          ? 'Generating summary…'
+          : `Rate limited — retrying in ${DELAYS[attempt-1]/1000}s… (${model})`);
+        return await _callGemini(model, truncated);
+      } catch (err) {
+        if (err.status === 429 && attempt < DELAYS.length) {
+          await new Promise(r => setTimeout(r, DELAYS[attempt]));
+          continue; // retry same model
+        }
+        break; // non-429 error or retries exhausted — try next model
+      }
+    }
+  }
+
+  // ── Final AI fallback: Claude ──
+  try {
+    updateLabel('Switching to backup AI…');
+    return await _callClaude(truncated);
+  } catch (err) {
+    throw new Error('All AI summarization attempts failed: ' + err.message);
+  }
 }
 
 /* ──────────────────────────────────────────
@@ -3548,13 +3594,13 @@ async function endSession() {
   // Show slow-start hint after 8 seconds if still loading
   const hintTimer = setTimeout(() => {
     const label = document.getElementById('ai-loading-label-' + session.id);
-    if (label) label.textContent = 'This may take a moment on first use…';
+    if (label) label.textContent = 'Still working — this can take up to 30s on rate limits…';
   }, 8000);
 
   // ── Run Gemini summarization in background ──
   if (fullText.length > 30) {
     try {
-      const geminiSummary    = await getGeminiSummary(fullText);
+      const geminiSummary    = await getGeminiSummary(fullText, 'ai-loading-label-' + session.id);
       session.summary        = geminiSummary;
       session.summaryLoading = false;
     } catch (err) {
