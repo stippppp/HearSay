@@ -718,12 +718,13 @@
     .del-confirm {
       position: fixed; inset: 0; z-index: 300;
       background: rgba(0,0,0,.45);
-      display: flex; align-items: flex-end; justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       animation: fadeIn .18s ease-out;
+      padding: 24px;
     }
     .del-confirm-box {
-      background: var(--card); border-radius: 20px 20px 0 0;
-      width: 100%; max-width: 430px; padding: 28px 24px 40px;
+      background: var(--card); border-radius: 20px;
+      width: 100%; max-width: 380px; padding: 28px 24px;
       display: flex; flex-direction: column; gap: 14px;
     }
     .del-confirm-title { font-size: 17px; font-weight: 800; color: var(--text); text-align: center; }
@@ -2270,7 +2271,7 @@ function renderProfile() {
         <input type="file" id="pic-upload" accept="image/*" style="display:none" />` : `
         <input type="file" id="pic-upload" accept="image/*" style="display:none" />`}
       </div>
-      <div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:8px">Max 5MB</div>
+      ${profEditing ? `<div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:8px">Max 5MB</div>` : ''}
     </div>
     <div class="profile-info">
       ${profEditing ? `
