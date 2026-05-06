@@ -614,6 +614,26 @@
     .mic-btn.on { box-shadow: 0 0 0 12px var(--primary-muted), var(--shadow-btn); }
     .mic-btn svg { stroke: #fff; width: 28px; height: 28px; }
 
+    /* Clear (×) button inside search bar */
+    .notes-search-clear {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: var(--border); border: none; border-radius: 50%;
+      width: 18px; height: 18px; cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+      padding: 0; flex-shrink: 0;
+    }
+    .notes-search-clear.visible { display: flex; }
+    .notes-search-clear svg { stroke: var(--text-muted); width: 10px; height: 10px; stroke-width: 2.5; }
+    /* Give the input enough right padding so text doesn't slide under the × button */
+    .notes-search-input.has-value { padding-right: 36px; }
+
+    /* Sort row */
+    .notes-sort-wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px 8px;
+    }
+    .notes-sort-wrap .summary-count { margin: 0; }
+
     /* ── SUMMARIES ── */
     .summaries-body { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
     .summary-count { font-size: 12px; color: var(--text-muted); font-weight: 500; }
@@ -1883,17 +1903,26 @@ function menuBtn() {
 /* ── SUMMARIES / SESSION DETAIL ── */
 const openCards = {};
 let notesSearchQuery = '';
+let notesSortOrder = 'newest'; // 'newest' | 'oldest' | 'subject'
+let searchDebounceTimer = null;
+function sortSessions(list) {
+  if (notesSortOrder === 'oldest') return [...list].reverse();
+  if (notesSortOrder === 'subject') return [...list].sort((a,b) => (a.subject||'').localeCompare(b.subject||''));
+  return list; // 'newest' = default order from Supabase (already desc)
+}
+
 function renderSummaries(filterId) {
   const allList = filterId ? S.sessions.filter(s=>s.id===filterId) : S.sessions;
   // Apply search filter (only on the notes list, not session detail)
   const q = notesSearchQuery.trim().toLowerCase();
-  const list = (!filterId && q)
+  const filtered = (!filterId && q)
     ? allList.filter(s =>
         (s.subject||'').toLowerCase().includes(q) ||
         (s.summary||'').toLowerCase().includes(q) ||
         (s.transcript||'').toLowerCase().includes(q) ||
         (s.date||'').toLowerCase().includes(q))
     : allList;
+  const list = filterId ? filtered : sortSessions(filtered);
   const backBtn = filterId
     ? `<button class="icon-btn" id="btn-sum-back">${ic('i-back',20,20)}</button>`
     : `<div style="width:36px"></div>`;
@@ -1909,11 +1938,22 @@ function renderSummaries(filterId) {
         <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;display:flex;align-items:center">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--text-muted)"><circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
         </div>
-        <input id="notes-search" class="notes-search-input" type="search" placeholder="Search sessions…" value="${escHtml(notesSearchQuery)}" autocomplete="off" />
+        <input id="notes-search" class="notes-search-input${notesSearchQuery ? ' has-value' : ''}" type="search" placeholder="Search sessions…" value="${escHtml(notesSearchQuery)}" autocomplete="off" />
+        <button id="notes-search-clear" class="notes-search-clear${notesSearchQuery ? ' visible' : ''}" aria-label="Clear search" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-    </div>` : ''}
+    </div>
+    ${allList.length ? `
+    <div class="notes-sort-wrap">
+      <p class="summary-count">${q ? list.length + ' result' + (list.length!==1?'s':'') + ' of ' + allList.length : allList.length + ' session' + (allList.length!==1?'s':'')} saved</p>
+      <select id="notes-sort" class="lang-select" style="font-size:12px;padding:5px 10px">
+        <option value="newest"${notesSortOrder==='newest'?' selected':''}>Newest</option>
+        <option value="oldest"${notesSortOrder==='oldest'?' selected':''}>Oldest</option>
+        <option value="subject"${notesSortOrder==='subject'?' selected':''}>A–Z</option>
+      </select>
+    </div>` : ''}` : ''}
     <div class="summaries-body">
-      ${!filterId && allList.length ? `<p class="summary-count">${q ? list.length + ' result' + (list.length!==1?'s':'') + ' of ' + allList.length : allList.length + ' session' + (allList.length!==1?'s':'')} saved</p>` : ''}
       ${list.length === 0 ? `
         <div class="empty-state">
           <div class="empty-icon">${ic('i-file',28,28)}</div>
@@ -1927,6 +1967,127 @@ function renderSummaries(filterId) {
           </button>` : '')}
     </div>
   </div>`;
+}
+
+/* ── NOTES: update list in-place (no full re-render) to prevent search stutter ── */
+function updateNotesListInPlace() {
+  const body = document.querySelector('.summaries-body');
+  if (!body) return;
+
+  const allList = S.sessions;
+  const q = notesSearchQuery.trim().toLowerCase();
+  const filtered = q
+    ? allList.filter(s =>
+        (s.subject||'').toLowerCase().includes(q) ||
+        (s.summary||'').toLowerCase().includes(q) ||
+        (s.transcript||'').toLowerCase().includes(q) ||
+        (s.date||'').toLowerCase().includes(q))
+    : allList;
+  const list = sortSessions(filtered);
+
+  // Sync clear button visibility + input padding class
+  const searchEl = $('notes-search');
+  const clearBtn = $('notes-search-clear');
+  if (searchEl) searchEl.classList.toggle('has-value', !!notesSearchQuery);
+  if (clearBtn)  clearBtn.classList.toggle('visible',   !!notesSearchQuery);
+
+  // Sync sort dropdown
+  const sortEl = $('notes-sort');
+  if (sortEl) sortEl.value = notesSortOrder;
+
+  // Update count line
+  const countEl = body.querySelector('.summary-count');
+  if (countEl) {
+    countEl.textContent = q
+      ? list.length + ' result' + (list.length !== 1 ? 's' : '') + ' of ' + allList.length
+      : allList.length + ' session' + (allList.length !== 1 ? 's' : '') + ' saved';
+  }
+
+  // Build cards HTML
+  let cardsHtml;
+  if (list.length === 0) {
+    cardsHtml = `<div class="empty-state">
+      <div class="empty-icon">${ic('i-file',28,28)}</div>
+      <div class="empty-title">${q ? 'No results found' : 'No notes yet'}</div>
+      <div class="empty-sub">${q ? 'No sessions match \u201c<strong>' + escHtml(q) + '</strong>\u201d. Try a different keyword.' : 'Complete a recording session to see your transcript and summary here.'}</div>
+    </div>`;
+  } else {
+    cardsHtml = (S.showAllSessions ? list : list.slice(0,10)).map(s => renderSumCard(s, false)).join('');
+    if (list.length > 10) {
+      cardsHtml += `<button id="btn-show-all" style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:700;color:var(--primary);cursor:pointer;font-family:var(--font);margin-top:4px">${S.showAllSessions ? 'Show less' : 'Show all ' + list.length + ' sessions'}</button>`;
+    }
+  }
+
+  // Remove old cards/empty states (keep the count element)
+  const toRemove = [];
+  body.childNodes.forEach(n => { if (n !== countEl) toRemove.push(n); });
+  toRemove.forEach(n => n.remove());
+
+  // Insert new cards
+  const tmp = document.createElement('div');
+  tmp.innerHTML = cardsHtml;
+  while (tmp.firstChild) body.appendChild(tmp.firstChild);
+
+  // Re-bind card-level events
+  rebindCardEvents();
+}
+
+function rebindCardEvents() {
+  document.querySelectorAll('[data-toggle]').forEach(b =>
+    b.addEventListener('click', e => { e.stopPropagation(); toggleCard(b.dataset.toggle); })
+  );
+  document.querySelectorAll('[data-card][data-tab]').forEach(b =>
+    b.addEventListener('click', e => { e.stopPropagation(); setCardTab(b.dataset.card, b.dataset.tab); })
+  );
+  document.querySelectorAll('[data-delete]').forEach(b =>
+    b.addEventListener('click', e => { e.stopPropagation(); confirmDelete(b.dataset.delete); })
+  );
+  document.querySelectorAll('[data-copy-id]').forEach(b =>
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const text = b.dataset.copyText || '';
+      const orig = b.innerHTML;
+      navigator.clipboard.writeText(text).then(() => {
+        b.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" style="stroke:var(--success);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+        b.style.color = 'var(--success)'; b.style.borderColor = 'var(--success)';
+        setTimeout(() => { b.innerHTML = orig; b.style.color=''; b.style.borderColor=''; }, 1800);
+      }).catch(() => { b.textContent = 'Failed'; setTimeout(() => { b.innerHTML = orig; }, 1800); });
+    })
+  );
+  document.querySelectorAll('[data-export-id]').forEach(b =>
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const sess = S.sessions.find(s => s.id === b.dataset.exportId);
+      if (!sess) return;
+      const txt = 'HearSay \u2014 ' + sess.subject + '\nDate: ' + sess.date + '  Duration: ' + sess.duration + '\n\n--- SUMMARY ---\n' + (sess.summary||'N/A') + '\n\n--- TRANSCRIPT ---\n' + (sess.transcript||'N/A') + '\n\n--- KEY PHRASES ---\n' + (sess.keyPhrases||[]).join(', ');
+      const a = document.createElement('a');
+      const url = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
+      a.href = url; a.download = (sess.subject||'session').replace(/[^a-z0-9]/gi,'_') + '.txt';
+      a.click(); URL.revokeObjectURL(url);
+    })
+  );
+  document.querySelectorAll('[data-export-pdf-id]').forEach(b =>
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const sess = S.sessions.find(s => s.id === b.dataset.exportPdfId);
+      if (!sess) return;
+      const win = window.open('', '_blank');
+      if (!win) { showToast('Pop-up blocked. Please allow pop-ups.', 'error'); return; }
+      const safeSubject = escHtml(sess.subject||'Session');
+      const safeDate    = escHtml(sess.date||'');
+      const safeDur     = escHtml(sess.duration||'\u2014');
+      const safeSummary = escHtml(sess.summary||'N/A').replace(/\n/g,'<br>');
+      const safeTrans   = escHtml(sess.transcript||'N/A').replace(/\n/g,'<br>');
+      const safePhrases = (sess.keyPhrases||[]).map(p=>`<span style="display:inline-block;background:#d0e8f8;color:#1a3c6e;border-radius:20px;padding:3px 10px;margin:2px;font-size:12px;font-weight:600">${escHtml(p)}</span>`).join('');
+      win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HearSay \u2014 '+safeSubject+'</title><style>body{font-family:\'Segoe UI\',Arial,sans-serif;max-width:720px;margin:40px auto;color:#1a3c6e;padding:0 24px}h1{font-size:24px;font-weight:800;margin-bottom:4px}.meta{font-size:13px;color:#7a9cbf;margin-bottom:28px}h2{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#1a3c6e;margin:24px 0 8px;padding-bottom:6px;border-bottom:2px solid #cce0f5}p{font-size:14px;line-height:1.8;color:#2a3a5a}.phrases{margin-top:8px}@media print{body{margin:20px}}</style></head><body><h1>'+safeSubject+'</h1><div class="meta">\uD83D\uDCC5 '+safeDate+' &nbsp;\xb7&nbsp; \u23F1 '+safeDur+'</div><h2>Summary</h2><p>'+safeSummary+'</p><h2>Transcript</h2><p>'+safeTrans+'</p>'+(safePhrases?'<h2>Key Phrases</h2><div class="phrases">'+safePhrases+'</div>':'')+'<script>window.onload=()=>{window.print();}<\/script></body></html>');
+      win.document.close();
+    })
+  );
+  $('btn-show-all')?.addEventListener('click', e => {
+    e.stopPropagation();
+    S.showAllSessions = !S.showAllSessions;
+    updateNotesListInPlace();
+  });
 }
 
 function renderSumCard(s, forceOpen=false) {
@@ -2433,7 +2594,7 @@ function bindEvents() {
       const origText = btn.textContent;
       btn.textContent = 'Sending…'; btn.disabled = true;
       const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.href
+        redirectTo: 'https://hear-say-v1.vercel.app/'
       });
       btn.textContent = origText; btn.disabled = false;
       const msg = $('l-msg');
@@ -2582,99 +2743,40 @@ function bindEvents() {
       if (S.prevScreen === 'summaries') go('summaries',{tab:'summaries'});
       else go('dashboard',{tab:'home'});
     });
-    document.querySelectorAll('[data-toggle]').forEach(b =>
-      b.addEventListener('click', e => { e.stopPropagation(); toggleCard(b.dataset.toggle); })
-    );
-    document.querySelectorAll('[data-card][data-tab]').forEach(b =>
-      b.addEventListener('click', e => { e.stopPropagation(); setCardTab(b.dataset.card, b.dataset.tab); })
-    );
-    document.querySelectorAll('[data-delete]').forEach(b =>
-      b.addEventListener('click', e => { e.stopPropagation(); confirmDelete(b.dataset.delete); })
-    );
-    // Copy button
-    document.querySelectorAll('[data-copy-id]').forEach(b =>
-      b.addEventListener('click', e => {
-        e.stopPropagation();
-        const text = b.dataset.copyText || '';
-        const orig = b.innerHTML;
-        navigator.clipboard.writeText(text).then(() => {
-          b.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" style="stroke:var(--success);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
-          b.style.color = 'var(--success)';
-          b.style.borderColor = 'var(--success)';
-          setTimeout(() => { b.innerHTML = orig; b.style.color=''; b.style.borderColor=''; }, 1800);
-        }).catch(() => {
-          b.textContent = 'Failed';
-          setTimeout(() => { b.innerHTML = orig; }, 1800);
-        });
-      })
-    );
-    // Search bar
+    rebindCardEvents();
+    // Search bar — debounced, update only the notes list in-place (no full re-render) to prevent layout stutter
     const searchInput = $('notes-search');
     if (searchInput) {
       searchInput.addEventListener('input', e => {
         notesSearchQuery = e.target.value;
         S.showAllSessions = false;
-        render();
-        // Re-focus the search input and restore caret position
-        const el = $('notes-search');
-        if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => updateNotesListInPlace(), 150);
+        // Sync the clear button immediately (no debounce needed for button visibility)
+        const clearBtn = $('notes-search-clear');
+        if (clearBtn) clearBtn.classList.toggle('visible', !!notesSearchQuery);
+        searchInput.classList.toggle('has-value', !!notesSearchQuery);
       });
     }
-    // Export .txt button
-    document.querySelectorAll('[data-export-id]').forEach(b =>
-      b.addEventListener('click', e => {
-        e.stopPropagation();
-        const sess = S.sessions.find(s => s.id === b.dataset.exportId);
-        if (!sess) return;
-        const txt = `HearSay — ${sess.subject}\nDate: ${sess.date}  Duration: ${sess.duration}\n\n--- SUMMARY ---\n${sess.summary || 'N/A'}\n\n--- TRANSCRIPT ---\n${sess.transcript || 'N/A'}\n\n--- KEY PHRASES ---\n${(sess.keyPhrases||[]).join(', ')}`;
-        const a = document.createElement('a');
-        const url = URL.createObjectURL(new Blob([txt], { type: 'text/plain' }));
-        a.href = url;
-        a.download = (sess.subject || 'session').replace(/[^a-z0-9]/gi,'_') + '.txt';
-        a.click();
-        URL.revokeObjectURL(url);
-      })
-    );
-    // Export PDF button
-    document.querySelectorAll('[data-export-pdf-id]').forEach(b =>
-      b.addEventListener('click', e => {
-        e.stopPropagation();
-        const sess = S.sessions.find(s => s.id === b.dataset.exportPdfId);
-        if (!sess) return;
-        const win = window.open('', '_blank');
-        if (!win) { showToast('Pop-up blocked. Please allow pop-ups.', 'error'); return; }
-        const safeSubject = escHtml(sess.subject || 'Session');
-        const safeDate    = escHtml(sess.date || '');
-        const safeDur     = escHtml(sess.duration || '—');
-        const safeSummary = escHtml(sess.summary || 'N/A').replace(/\n/g,'<br>');
-        const safeTrans   = escHtml(sess.transcript || 'N/A').replace(/\n/g,'<br>');
-        const safePhrases = (sess.keyPhrases||[]).map(p=>`<span style="display:inline-block;background:#d0e8f8;color:#1a3c6e;border-radius:20px;padding:3px 10px;margin:2px;font-size:12px;font-weight:600">${escHtml(p)}</span>`).join('');
-        win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HearSay — ${safeSubject}</title>
-          <style>
-            body{font-family:'Segoe UI',Arial,sans-serif;max-width:720px;margin:40px auto;color:#1a3c6e;padding:0 24px}
-            h1{font-size:24px;font-weight:800;margin-bottom:4px}
-            .meta{font-size:13px;color:#7a9cbf;margin-bottom:28px}
-            h2{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#1a3c6e;margin:24px 0 8px;padding-bottom:6px;border-bottom:2px solid #cce0f5}
-            p{font-size:14px;line-height:1.8;color:#2a3a5a}
-            .phrases{margin-top:8px}
-            @media print{body{margin:20px}}
-          </style></head><body>
-          <h1>${safeSubject}</h1>
-          <div class="meta">📅 ${safeDate} &nbsp;·&nbsp; ⏱ ${safeDur}</div>
-          <h2>Summary</h2><p>${safeSummary}</p>
-          <h2>Transcript</h2><p>${safeTrans}</p>
-          ${safePhrases ? `<h2>Key Phrases</h2><div class="phrases">${safePhrases}</div>` : ''}
-          <script>window.onload=()=>{window.print();}<\/script>
-        </body></html>`);
-        win.document.close();
-      })
-    );
-    // Show all toggle
-    $('btn-show-all')?.addEventListener('click', e => {
-      e.stopPropagation();
-      S.showAllSessions = !S.showAllSessions;
-      render();
-    });
+    // Clear button
+    const clearBtn = $('notes-search-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        notesSearchQuery = '';
+        S.showAllSessions = false;
+        const el = $('notes-search');
+        if (el) { el.value = ''; el.focus(); }
+        updateNotesListInPlace();
+      });
+    }
+    // Sort dropdown
+    const sortSel = $('notes-sort');
+    if (sortSel) {
+      sortSel.addEventListener('change', e => {
+        notesSortOrder = e.target.value;
+        updateNotesListInPlace();
+      });
+    }
   }
 
   /* PROFILE */
@@ -3353,6 +3455,77 @@ function openTncModal() {
 async function init() {
   hydrate();
   applySettings();
+
+  // ── PASSWORD RESET TAB HANDOFF ──
+  // If this tab was opened by the Supabase reset email link, try to hand off
+  // the recovery token to an already-open tab instead of staying here.
+  const hash = window.location.hash;
+  const isPasswordRecovery = hash.includes('type=recovery') || hash.includes('type=magiclink');
+
+  if (isPasswordRecovery) {
+    // Broadcast the token to any existing tab, then close this new tab
+    try {
+      const bc = new BroadcastChannel('hs_reset');
+      bc.postMessage({ type: 'RECOVERY_HANDOFF', hash });
+      bc.close();
+    } catch(_) {}
+
+    // Give existing tabs 400ms to respond, then check if we should close
+    // We only close if at least one other tab acknowledged it
+    let handedOff = false;
+    try {
+      const bc2 = new BroadcastChannel('hs_reset');
+      bc2.onmessage = e => {
+        if (e.data?.type === 'RECOVERY_ACK') {
+          handedOff = true;
+          bc2.close();
+          // Show a brief message then close this tab
+          document.getElementById('app').innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;flex:1;width:100%;flex-direction:column;gap:16px;min-height:100vh;min-height:100dvh">
+              <div style="width:48px;height:48px;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" style="stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+              </div>
+              <div style="font-size:13px;color:var(--text-muted);font-weight:600">Redirecting to your open tab…</div>
+            </div>`;
+          setTimeout(() => window.close(), 800);
+        }
+      };
+      // If no ack after 500ms, no existing tab — fall through and load normally
+      setTimeout(() => {
+        if (!handedOff) { bc2.close(); continueInit(); }
+      }, 500);
+    } catch(_) {
+      continueInit();
+    }
+    return; // wait for the timeout / ack above
+  }
+
+  // ── LISTEN for handoff from a newly-opened reset tab ──
+  try {
+    const bc = new BroadcastChannel('hs_reset');
+    bc.onmessage = e => {
+      if (e.data?.type === 'RECOVERY_HANDOFF') {
+        // Acknowledge so the new tab knows to close
+        const ack = new BroadcastChannel('hs_reset');
+        ack.postMessage({ type: 'RECOVERY_ACK' });
+        ack.close();
+        bc.close();
+        // Apply the recovery hash to this tab's URL silently, then show reset screen
+        history.replaceState(null, '', e.data.hash);
+        sessionStorage.setItem('hs_recovery', '1');
+        S.user = null;
+        S.screen = 'reset-password';
+        render();
+      }
+    };
+    // Keep listening while this tab is alive
+    window._hsResetChannel = bc;
+  } catch(_) {}
+
+  continueInit();
+}
+
+async function continueInit() {
   // Show a loading state
   document.getElementById('app').innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;flex:1;width:100%;flex-direction:column;gap:16px;min-height:100vh;min-height:100dvh">
