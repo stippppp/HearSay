@@ -751,8 +751,8 @@
     }
     .notes-search-input::placeholder { color: var(--text-muted); }
     .notes-search-input:focus { border-color: var(--primary-lighter); box-shadow: 0 0 0 3px rgba(74,144,217,.15); }
-    /* Clear (×) button that browsers add to search inputs */
-    .notes-search-input::-webkit-search-cancel-button { cursor: pointer; }
+    /* Clear (×) button that browsers add to search inputs — hide it, we use our own */
+    .notes-search-input::-webkit-search-cancel-button { display: none; -webkit-appearance: none; }
     .notes-search-icon {
       position: absolute; left: 28px; top: 50%; transform: translateY(-50%);
       pointer-events: none;
