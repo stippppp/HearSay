@@ -2214,7 +2214,7 @@ function renderSumCard(s, forceOpen=false) {
             ${s.summaryLoading ? `
               <div class="ai-loading" id="ai-loading-${escHtml(s.id)}">
                 <div class="spinner"></div>
-                <span id="ai-loading-label-${escHtml(s.id)}">Generating summary with BART…</span>
+                <span id="ai-loading-label-${escHtml(s.id)}">Generating summary with Gemini…</span>
               </div>` : `
               <div class="sum-text">${escHtml(s.summary||'No summary available.')}</div>
             `}` : `
@@ -3480,58 +3480,45 @@ function updateTranscriptDOM(final, interim) {
 }
 
 /* ──────────────────────────────────────────
-   BART SUMMARIZATION (HuggingFace Inference API)
+   GEMINI SUMMARIZATION (Google Generative Language API)
 ────────────────────────────────────────── */
-async function getBartSummary(text, retries = 2) {
-  // Truncate to ~1000 words — BART has a token limit
+async function getGeminiSummary(text) {
+  // Truncate to ~1000 words to keep the prompt concise
   const words     = text.trim().split(/\s+/);
   const truncated = words.slice(0, 1000).join(' ');
 
   const response = await fetch(
-    'https://hearsay-bart.penaflorshean16.workers.dev',
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyARnKsFp2fELJbDBkFtD_KoBDt6T40BFrk',
     {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        inputs: truncated,
-        parameters: {
-          max_length:    180,
-          min_length:    40,
-          do_sample:     false,
+        contents: [{
+          parts: [{
+            text: `Summarize the following classroom transcript into a single concise paragraph that captures the key topics and takeaways. Return only the summary paragraph, no preamble.\n\nTranscript:\n${truncated}`,
+          }],
+        }],
+        generationConfig: {
+          maxOutputTokens: 300,
+          temperature:     0.3,
         },
       }),
     }
   );
 
-  if (!response.ok) throw new Error('BART API error: ' + response.status);
+  if (!response.ok) throw new Error('Gemini API error: ' + response.status);
 
-  // Safely parse JSON — HuggingFace may return HTML on errors
   let data;
   try {
     data = await response.json();
   } catch (e) {
-    throw new Error('HuggingFace returned invalid JSON (possible auth or model error)');
+    throw new Error('Gemini returned invalid JSON');
   }
 
-  // HuggingFace returns [{ summary_text: "..." }]
-  if (Array.isArray(data) && data[0]?.summary_text) {
-    return data[0].summary_text;
-  }
+  const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (summary) return summary;
 
-  // Model is cold-starting — HuggingFace returns { error: "Loading...", estimated_time: N }
-  if (data?.error) {
-    if (retries > 0 && (data.error.toLowerCase().includes('load') || data.estimated_time)) {
-      const waitMs = Math.min((data.estimated_time || 20) * 1000, 25000);
-      // Update loading label if visible
-      const labels = document.querySelectorAll('[id^="ai-loading-label-"]');
-      labels.forEach(l => l.textContent = `Model is warming up, retrying in ${Math.round(waitMs/1000)}s…`);
-      await new Promise(r => setTimeout(r, waitMs));
-      return getBartSummary(text, retries - 1);
-    }
-    throw new Error(data.error);
-  }
-
-  throw new Error('Unexpected response from BART');
+  throw new Error('Unexpected response from Gemini');
 }
 
 /* ──────────────────────────────────────────
@@ -3551,7 +3538,7 @@ async function endSession() {
     transcript:     fullText || 'No speech was captured.',
     summary:        '',
     keyPhrases:     phrases,
-    summaryLoading: true,   // show spinner while BART runs
+    summaryLoading: true,   // show spinner while Gemini runs
   };
 
   S.sessions.unshift(session);
@@ -3564,21 +3551,21 @@ async function endSession() {
     if (label) label.textContent = 'This may take a moment on first use…';
   }, 8000);
 
-  // ── Run BART summarization in background ──
+  // ── Run Gemini summarization in background ──
   if (fullText.length > 30) {
     try {
-      const bartSummary      = await getBartSummary(fullText);
-      session.summary        = bartSummary;
+      const geminiSummary    = await getGeminiSummary(fullText);
+      session.summary        = geminiSummary;
       session.summaryLoading = false;
     } catch (err) {
-      console.warn('BART summarization failed, using fallback:', err.message);
+      console.warn('Gemini summarization failed, using fallback:', err.message);
       session.summary        = smartSummary(fullText, LS.subject);
       session.summaryLoading = false;
     } finally {
       clearTimeout(hintTimer);
     }
   } else {
-    // Too short for BART — use fallback immediately
+    // Too short for Gemini — use fallback immediately
     session.summary        = fullText ? smartSummary(fullText, LS.subject) : 'No significant content was captured.';
     session.summaryLoading = false;
     clearTimeout(hintTimer);
@@ -3914,7 +3901,7 @@ function showToast(msg, type='info') {
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3500);
 }
-window.addEventListener('offline', () => showToast('⚠️ You are offline. BART and sync require internet.', 'error'));
+window.addEventListener('offline', () => showToast('⚠️ You are offline. Gemini and sync require internet.', 'error'));
 window.addEventListener('online',  () => showToast('✅ Back online!', 'success'));
 </script>
 </body>
