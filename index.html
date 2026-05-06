@@ -1652,8 +1652,8 @@ function renderResetPassword() {
 
 /* ── VERIFY EMAIL ── */
 function renderVerifyEmail() {
-  const email = (window._pendingVerifyEmail || '');
-  const sent  = !!window._verifyEmailSent;
+  const email = (window._pendingVerifyEmail || sessionStorage.getItem('hs_pending_verify_email') || '');
+  const sent  = !!(window._verifyEmailSent || sessionStorage.getItem('hs_verify_email_sent') === '1');
   return `<div class="screen no-pad" style="position:relative;background:var(--bg)">
     <div class="login-screen-wrap">
     <div class="login-card" style="width:100%">
@@ -2408,7 +2408,13 @@ function bindEvents() {
 
   /* VERIFY EMAIL */
   if (s === 'verify-email') {
-    $('btn-verify-back')?.addEventListener('click', () => { loginTab='register'; go('login'); });
+    $('btn-verify-back')?.addEventListener('click', () => {
+      sessionStorage.removeItem('hs_pending_verify_email');
+      sessionStorage.removeItem('hs_verify_email_sent');
+      window._pendingVerifyEmail = null;
+      window._verifyEmailSent = false;
+      loginTab='register'; go('login');
+    });
     $('btn-verify-login')?.addEventListener('click', () => { loginTab='login'; go('login'); });
 
     // "Send Verification Email" button — calls Supabase for real
@@ -2423,6 +2429,7 @@ function bindEvents() {
       try {
         await sbDoSignUp();
         window._verifyEmailSent = true;
+        sessionStorage.setItem('hs_verify_email_sent', '1');
         render(); // re-render to show "Email sent!" state
       } catch(e) {
         const friendly =
@@ -2442,9 +2449,13 @@ function bindEvents() {
     $('btn-resend-verify')?.addEventListener('click', async () => {
       const btn  = $('btn-resend-verify');
       const info = $('resend-msg');
+      const email = window._pendingVerifyEmail || sessionStorage.getItem('hs_pending_verify_email') || '';
+      if (!email) {
+        if (info) info.textContent = 'Session expired. Please go back and register again.';
+        return;
+      }
       if (btn) { btn.textContent = 'Resending…'; btn.disabled = true; }
       try {
-        const email = window._pendingVerifyEmail || '';
         await sb.auth.resend({ type: 'signup', email });
         if (info) info.textContent = 'Email resent! Check your inbox.';
       } catch(e) {
@@ -2838,6 +2849,8 @@ function bindEvents() {
         // Go to verify-email screen — email not sent yet
         window._pendingVerifyEmail = email;
         window._verifyEmailSent = false;
+        sessionStorage.setItem('hs_pending_verify_email', email);
+        sessionStorage.setItem('hs_verify_email_sent', '0');
         go('verify-email');
       } catch(e) {
         const friendly =
