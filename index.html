@@ -1897,7 +1897,7 @@ function renderDashboard() {
               <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:5px">No sessions yet</div>
               <div style="font-size:13px;color:var(--text-muted);line-height:1.6;max-width:240px;margin:0 auto">Start your first recording to see your notes here. Tap the button above to begin!</div>
             </div>
-            <button class="btn btn-primary" id="btn-empty-start" style="max-width:220px;padding:12px 20px;font-size:14px">Start First Session</button>
+
           </div>` :
           ss.slice(0,5).map(s=>`
             <button class="session-item" data-sid="${escHtml(s.id)}">
@@ -2866,7 +2866,6 @@ function bindEvents() {
   /* DASHBOARD */
   if (s === 'dashboard') {
     $('btn-new-session')?.addEventListener('click', () => go('session',{tab:'session'}));
-    $('btn-empty-start')?.addEventListener('click', () => go('session',{tab:'session'}));
     $('dash-avatar-btn')?.addEventListener('click', () => go('profile',{tab:'profile'}));
     document.querySelectorAll('[data-sid]').forEach(b =>
       b.addEventListener('click', () => go('session-detail',{sid:b.dataset.sid}))
