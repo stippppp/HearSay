@@ -2421,9 +2421,13 @@ function bindEvents() {
       sessionStorage.removeItem('hs_verify_email_sent');
       window._pendingVerifyEmail = null;
       window._verifyEmailSent = false;
+      if (window._expiryCountdownTimer) { clearInterval(window._expiryCountdownTimer); window._expiryCountdownTimer = null; }
       loginTab='register'; go('login');
     });
-    $('btn-verify-login')?.addEventListener('click', () => { loginTab='login'; go('login'); });
+    $('btn-verify-login')?.addEventListener('click', () => {
+      if (window._expiryCountdownTimer) { clearInterval(window._expiryCountdownTimer); window._expiryCountdownTimer = null; }
+      loginTab='login'; go('login');
+    });
 
     // "Send Verification Email" button — calls Supabase for real
     $('btn-send-verify')?.addEventListener('click', async () => {
@@ -2485,6 +2489,22 @@ function bindEvents() {
         window._lastResendAt = sentAt;
         sessionStorage.setItem('hs_verify_email_sent_at', String(sentAt));
         if (warn) { warn.style.color='var(--success)'; warn.textContent = '✅ Email resent! Check your inbox.'; }
+        // Restart 5-min expiry countdown with new sentAt
+        if (window._expiryCountdownTimer) clearInterval(window._expiryCountdownTimer);
+        const newSentAt = sentAt;
+        const EXPIRY_MS = 5 * 60 * 1000;
+        function restartExpiry() {
+          const el = $('expiry-countdown');
+          if (!el) { clearInterval(window._expiryCountdownTimer); return; }
+          const remaining = Math.max(0, EXPIRY_MS - (Date.now() - newSentAt));
+          const mins = Math.floor(remaining / 60000);
+          const secs = Math.floor((remaining % 60000) / 1000);
+          el.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+          el.style.color = '';
+          if (remaining <= 0) { clearInterval(window._expiryCountdownTimer); el.textContent = '0:00'; el.style.color = 'var(--danger)'; }
+        }
+        restartExpiry();
+        window._expiryCountdownTimer = setInterval(restartExpiry, 1000);
         // Start 60s cooldown UI
         let secs = 60;
         if (btn) { btn.textContent = `Resend again in ${secs}s`; btn.disabled = true; }
@@ -2508,6 +2528,42 @@ function bindEvents() {
         if (btn) { btn.textContent = 'Resend Email'; btn.disabled = false; }
       }
     });
+  }
+
+  /* VERIFY EMAIL — start expiry countdown if email was already sent */
+  if (s === 'verify-email') {
+    const sent = !!(window._verifyEmailSent || sessionStorage.getItem('hs_verify_email_sent') === '1');
+    if (sent) {
+      // Restore sentAt in case of page refresh
+      if (!window._verifyEmailSentAt && sessionStorage.getItem('hs_verify_email_sent_at')) {
+        window._verifyEmailSentAt = Number(sessionStorage.getItem('hs_verify_email_sent_at'));
+      }
+      const sentAt = window._verifyEmailSentAt || Date.now();
+      const EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+      function updateExpiryCountdown() {
+        const el = $('expiry-countdown');
+        if (!el) { clearInterval(window._expiryCountdownTimer); return; }
+        const elapsed = Date.now() - sentAt;
+        const remaining = Math.max(0, EXPIRY_MS - elapsed);
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        el.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        if (remaining <= 0) {
+          clearInterval(window._expiryCountdownTimer);
+          el.textContent = '0:00';
+          el.style.color = 'var(--danger)';
+          // Show expiry warning on the resend-warn element
+          const warn = $('resend-warn');
+          if (warn && !warn.textContent) {
+            warn.style.color = 'var(--danger)';
+            warn.textContent = '⚠️ Link expired! Please resend the verification email.';
+          }
+        }
+      }
+      if (window._expiryCountdownTimer) clearInterval(window._expiryCountdownTimer);
+      updateExpiryCountdown(); // run immediately
+      window._expiryCountdownTimer = setInterval(updateExpiryCountdown, 1000);
+    }
   }
 
   /* EMAIL VERIFIED SUCCESS */
