@@ -1479,7 +1479,7 @@ function openMenuDrawer() {
       go(b.dataset.drawerNav, {tab: b.dataset.drawerTab});
     });
   });
-  overlay.querySelector('#drawer-logout')?.addEventListener('click', () => { overlay.remove(); confirmLogout(); });
+  overlay.querySelector('#drawer-logout')?.addEventListener('click', () => { confirmLogout(); overlay.remove(); });
 }
 
 /* ── NAVIGATION ── */
