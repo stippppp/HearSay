@@ -2263,10 +2263,12 @@ function renderProfile() {
         ${S.user.profilePic
           ? `<img src="${S.user.profilePic}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,.4)" />`
           : `<div class="profile-avatar">${escHtml(S.user.avatar)}</div>`}
+        ${profEditing ? `
         <label for="pic-upload" style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:var(--primary-lighter);border:2px solid #fff;display:flex;align-items:center;justify-content:center;cursor:pointer">
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" style="stroke:#fff"><use href="#i-edit"/></svg>
         </label>
-        <input type="file" id="pic-upload" accept="image/*" style="display:none" />
+        <input type="file" id="pic-upload" accept="image/*" style="display:none" />` : `
+        <input type="file" id="pic-upload" accept="image/*" style="display:none" />`}
       </div>
       <div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:8px">Max 5MB</div>
     </div>
@@ -2430,6 +2432,8 @@ function bindEvents() {
           e.message?.includes('already registered')  ? 'This Student ID is already registered. Try logging in instead.' :
           e.message?.includes('User already')        ? 'This Student ID is already registered. Try logging in instead.' :
           e.message?.includes('duplicate')           ? 'This Student ID is already registered. Try logging in instead.' :
+          e.message?.includes('rate limit')          ? 'Too many emails sent. Please wait a few minutes before trying again.' :
+          e.message?.includes('over_email_send_rate_limit') ? 'Too many emails sent. Please wait a few minutes before trying again.' :
           e.message || 'Failed to send email. Please try again.';
         if (msg) showMsg(msg, friendly);
         if (btn) { btn.textContent = 'Send Verification Email'; btn.disabled = false; }
@@ -2444,9 +2448,12 @@ function bindEvents() {
       try {
         const email = window._pendingVerifyEmail || '';
         await sb.auth.resend({ type: 'signup', email });
-        if (info) info.textContent = '✅ Email resent! Check your inbox.';
+        if (info) info.textContent = 'Email resent! Check your inbox.';
       } catch(e) {
-        if (info) info.textContent = 'Could not resend. Please wait a moment and try again.';
+        const isRateLimit = e.message?.includes('rate limit') || e.message?.includes('over_email_send_rate_limit');
+        if (info) info.textContent = isRateLimit
+          ? 'Too many emails sent. Please wait a few minutes before trying again.'
+          : 'Could not resend. Please wait a moment and try again.';
       } finally {
         if (btn) { btn.textContent = 'Resend Email'; btn.disabled = false; }
         setTimeout(() => { const el = $('resend-msg'); if (el) el.textContent = ''; }, 4000);
