@@ -1197,6 +1197,8 @@
 
 /* ── SUPABASE ── */
 const SUPABASE_URL  = 'https://oityyscrcmnhluwhrfjs.supabase.co';
+// SECURITY: This anon key is safe to expose only because Row-Level Security (RLS)
+// is enabled on all Supabase tables. Never disable RLS on profiles or sessions tables.
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pdHl5c2NyY21uaGx1d2hyZmpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NzA1NzAsImV4cCI6MjA5MzQ0NjU3MH0.ma8p7DEgr70gydWu1fNyDCgoDr0DtoFSc690wfstt3Y';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -1405,11 +1407,6 @@ function keyPhrases(text) {
   });
   return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([w])=>w);
 }
-function basicSummary(text) {
-  const sents = text.split(/[.!?]+/).map(s=>s.trim()).filter(s=>s.length>20);
-  if (!sents.length) return 'No significant content captured.';
-  return sents.slice(0,3).join('. ') + '.';
-}
 function smartSummary(text, subject) {
   if (!text || text.length < 10) return 'No significant content was captured during this session.';
   const sents = text.split(/[.!?]+/).map(s=>s.trim()).filter(s=>s.length>15);
@@ -1475,7 +1472,7 @@ function openMenuDrawer() {
       go(b.dataset.drawerNav, {tab: b.dataset.drawerTab});
     });
   });
-  overlay.querySelector('#drawer-logout')?.addEventListener('click', () => { overlay.remove(); doLogout(); });
+  overlay.querySelector('#drawer-logout')?.addEventListener('click', () => { overlay.remove(); confirmLogout(); });
 }
 
 /* ── NAVIGATION ── */
@@ -1492,12 +1489,13 @@ function go(screen, opts={}) {
 
 function render() {
   applySettings();
-  const noNavScreens = new Set(['landing','login','session','session-live','reset-password']);
+  const noNavScreens = new Set(['landing','login','session','session-live','reset-password','verify-email']);
   const showNav = S.user && !noNavScreens.has(S.screen);
 
   const screens = {
     'landing':        renderLanding,
     'login':          renderLogin,
+    'verify-email':   renderVerifyEmail,
     'reset-password': renderResetPassword,
     'dashboard':      renderDashboard,
     'session':        renderSessionSetup,
@@ -1640,6 +1638,45 @@ function renderResetPassword() {
       </div>
       <div id="rp-msg" class="msg"></div>
       <button id="btn-rp-submit" class="btn btn-primary">Set New Password</button>
+    </div>
+  </div>`;
+}
+
+/* ── VERIFY EMAIL ── */
+function renderVerifyEmail() {
+  const email = (window._pendingVerifyEmail || '');
+  return `<div class="screen no-pad" style="position:relative;background:var(--bg)">
+    <div class="login-screen-wrap">
+    <div class="login-card" style="width:100%">
+    <div class="login-header" style="position:relative">
+      <div class="login-header-glow"></div>
+      <button class="login-back" id="btn-verify-back" style="position:relative;z-index:1">${ic('i-back',18,18)}</button>
+      <div style="display:flex;align-items:center;gap:12px;flex:1;position:relative;z-index:1">
+        <div class="login-logo">${ic('i-mic',24,24)}</div>
+        <div>
+          <div class="login-brand-name">HearSay</div>
+          <div class="login-brand-sub">Check your inbox</div>
+        </div>
+      </div>
+    </div>
+    <div class="login-body" style="align-items:center;text-align:center;padding-top:40px;padding-bottom:56px">
+      <div style="font-size:52px;margin-bottom:8px">📬</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:10px">Verify your email</div>
+      <p style="font-size:14px;color:var(--text-muted);line-height:1.65;max-width:300px;margin:0 auto 24px">
+        We sent a confirmation link to<br>
+        <strong style="color:var(--primary)">${escHtml(email)}</strong><br><br>
+        Open your Gordon College email and click the link to activate your account.
+      </p>
+      <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-size:13px;color:var(--text-muted);line-height:1.6;max-width:300px;margin:0 auto 24px;text-align:left">
+        <strong style="color:var(--primary);display:block;margin-bottom:4px">📌 Next steps:</strong>
+        1. Open your <strong>@gordoncollege.edu.ph</strong> inbox<br>
+        2. Click the verification link in the email<br>
+        3. Come back here and log in
+      </div>
+      <button id="btn-verify-login" class="btn btn-primary" style="max-width:300px">Go to Login</button>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:16px">Didn't get it? Check your spam folder or re-register.</p>
+    </div>
+    </div>
     </div>
   </div>`;
 }
@@ -1791,14 +1828,15 @@ function renderDashboard() {
       <div>
         <div class="section-title">Recent Sessions</div>
         ${ss.length===0 ? `
-          <div style="background:var(--card);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-card);border:1.5px dashed var(--border);display:flex;align-items:flex-start;gap:12px">
-            <div style="width:32px;height:32px;border-radius:10px;background:var(--primary-muted);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M9 1a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z"/><path d="M15 8v1a6 6 0 0 1-12 0V8"/><line x1="9" y1="15" x2="9" y2="18"/></svg>
+          <div style="background:var(--card);border-radius:var(--radius);padding:28px 20px;box-shadow:var(--shadow-card);border:1.5px dashed var(--border);display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px">
+            <div style="width:56px;height:56px;border-radius:18px;background:var(--primary-muted);display:flex;align-items:center;justify-content:center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M9 1a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0V4a3 3 0 0 1 3-3z"/><path d="M15 8v1a6 6 0 0 1-12 0V8"/><line x1="9" y1="15" x2="9" y2="18"/></svg>
             </div>
             <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">No sessions yet</div>
-              <div style="font-size:12px;color:var(--text-muted);line-height:1.55">Tap <strong>Start New Session</strong> above, enter a subject, and speak — HearSay will transcribe and summarize for you.</div>
+              <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:5px">No sessions yet</div>
+              <div style="font-size:13px;color:var(--text-muted);line-height:1.6;max-width:240px;margin:0 auto">Start your first recording to see your notes here. Tap the button above to begin!</div>
             </div>
+            <button class="btn btn-primary" id="btn-empty-start" style="max-width:220px;padding:12px 20px;font-size:14px">🎤 Start First Session</button>
           </div>` :
           ss.slice(0,5).map(s=>`
             <button class="session-item" data-sid="${escHtml(s.id)}">
@@ -2170,6 +2208,7 @@ function renderProfile() {
         </label>
         <input type="file" id="pic-upload" accept="image/*" style="display:none" />
       </div>
+      <div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:8px">Max 5MB</div>
     </div>
     <div class="profile-info">
       ${profEditing ? `
@@ -2306,6 +2345,12 @@ function renderSettings() {
 ────────────────────────────────────────── */
 function bindEvents() {
   const s = S.screen;
+
+  /* VERIFY EMAIL */
+  if (s === 'verify-email') {
+    $('btn-verify-back')?.addEventListener('click', () => { loginTab='register'; go('login'); });
+    $('btn-verify-login')?.addEventListener('click', () => { loginTab='login'; go('login'); });
+  }
 
   /* LANDING */
   if (s === 'landing') {
@@ -2643,8 +2688,10 @@ function bindEvents() {
       const btn = $('btn-register');
       btn.textContent = 'Creating account…'; btn.disabled = true;
       try {
-        const acct = await sbSignUp(name, email, pw, courseSection);
-        doLogin(acct);
+        await sbSignUp(name, email, pw, courseSection);
+        // Show verify-email page instead of auto-login
+        window._pendingVerifyEmail = email;
+        go('verify-email');
       } catch(e) {
         showMsg(msg, e.message || 'Registration failed. Please try again.');
       } finally {
@@ -2663,6 +2710,7 @@ function bindEvents() {
   /* DASHBOARD */
   if (s === 'dashboard') {
     $('btn-new-session')?.addEventListener('click', () => go('session',{tab:'session'}));
+    $('btn-empty-start')?.addEventListener('click', () => go('session',{tab:'session'}));
     $('dash-avatar-btn')?.addEventListener('click', () => go('profile',{tab:'profile'}));
     document.querySelectorAll('[data-sid]').forEach(b =>
       b.addEventListener('click', () => go('session-detail',{sid:b.dataset.sid}))
@@ -2687,6 +2735,28 @@ function bindEvents() {
             input.placeholder       = 'e.g. Math 101, Biology, History...';
           }, 2500);
         }
+        return;
+      }
+      // Check for duplicate subject title (case-insensitive)
+      const duplicate = S.sessions.some(s => s.subject.trim().toLowerCase() === subj.toLowerCase());
+      if (duplicate) {
+        const input = $('sess-subject');
+        if (input) {
+          input.style.borderColor = 'var(--danger)';
+          input.style.boxShadow   = '0 0 0 3px rgba(217,83,79,.15)';
+          setTimeout(() => { input.style.borderColor = ''; input.style.boxShadow = ''; }, 2500);
+        }
+        // Show inline error
+        let dupMsg = $('sess-dup-msg');
+        if (!dupMsg) {
+          dupMsg = document.createElement('div');
+          dupMsg.id = 'sess-dup-msg';
+          dupMsg.style.cssText = 'font-size:13px;color:var(--danger);background:rgba(217,83,79,.08);border-radius:8px;padding:8px 12px;text-align:center;margin-top:-8px';
+          const btn = $('btn-start-rec');
+          btn?.parentNode.insertBefore(dupMsg, btn);
+        }
+        dupMsg.textContent = `"${subj}" already exists. Use a different title or add a date/number (e.g. "${subj} 2").`;
+        setTimeout(() => dupMsg?.remove(), 4000);
         return;
       }
       // Request mic permission explicitly before starting — avoids "permission denied" on language change
@@ -2787,6 +2857,12 @@ function bindEvents() {
     $('pic-upload')?.addEventListener('change', e => {
       const file = e.target.files?.[0];
       if (!file) return;
+      // 5MB size limit
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Image is too large. Please choose a photo under 5MB.', 'error');
+        e.target.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onload = async ev => {
         // Resize image to max 300x300 before saving
@@ -2851,7 +2927,7 @@ function bindEvents() {
       });
     });
     $('btn-update-pw')?.addEventListener('click', updatePassword);
-    $('btn-logout')?.addEventListener('click', doLogout);
+    $('btn-logout')?.addEventListener('click', () => confirmLogout());
   }
 }
 
@@ -2881,6 +2957,27 @@ function doLogin(acct) {
   loadSessionsFromSupabase().then(() => {
     if (S.screen === 'dashboard' || S.screen === 'summaries') render();
   });
+}
+
+function confirmLogout() {
+  const existing = document.getElementById('logout-confirm-overlay');
+  if (existing) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'logout-confirm-overlay';
+  overlay.className = 'del-confirm';
+  overlay.innerHTML = `
+    <div class="del-confirm-box">
+      <div class="del-confirm-title">Log out?</div>
+      <div class="del-confirm-sub">You'll need to log in again to access your sessions.</div>
+      <div class="del-confirm-actions">
+        <button class="del-keep" id="lo-cancel">Stay</button>
+        <button class="del-go"   id="lo-confirm" style="background:var(--danger)">Log out</button>
+      </div>
+    </div>`;
+  document.getElementById('app').appendChild(overlay);
+  document.getElementById('lo-cancel').addEventListener('click', () => overlay.remove());
+  document.getElementById('lo-confirm').addEventListener('click', () => { overlay.remove(); doLogout(); });
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
 async function doLogout() {
