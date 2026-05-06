@@ -1289,16 +1289,13 @@ async function sbDoSignUp() {
   const { data, error } = await sb.auth.signUp({
     email,
     password,
-    options: { data: { display_name: name, full_name: name } }
+    // Pass name and course in metadata so the DB trigger can use them
+    options: { data: { display_name: name, full_name: name, course } }
   });
   if (error) throw error;
   const uid = data.user?.id;
   if (!uid) throw new Error('Sign up failed — no user returned.');
-  // Insert profile row
-  const { error: pe } = await sb.from('profiles').insert({
-    id: uid, name, course, avatar: name.substring(0,2).toUpperCase(), profile_pic: ''
-  });
-  if (pe) throw pe;
+  // Profile row is created automatically by the database trigger on_auth_user_created
   return { id: uid, name, email, course, avatar: name.substring(0,2).toUpperCase(), profilePic: '' };
 }
 
