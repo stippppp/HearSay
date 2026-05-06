@@ -1654,6 +1654,10 @@ function renderResetPassword() {
 function renderVerifyEmail() {
   const email = (window._pendingVerifyEmail || sessionStorage.getItem('hs_pending_verify_email') || '');
   const sent  = !!(window._verifyEmailSent || sessionStorage.getItem('hs_verify_email_sent') === '1');
+  // Restore sentAt from sessionStorage if page was refreshed
+  if (!window._verifyEmailSentAt && sessionStorage.getItem('hs_verify_email_sent_at')) {
+    window._verifyEmailSentAt = Number(sessionStorage.getItem('hs_verify_email_sent_at'));
+  }
   return `<div class="screen no-pad" style="position:relative;background:var(--bg)">
     <div class="login-screen-wrap">
     <div class="login-card" style="width:100%">
@@ -1692,6 +1696,10 @@ function renderVerifyEmail() {
           <strong style="color:var(--primary)">${escHtml(email)}</strong><br><br>
           Click the link in your email to activate your account.
         </p>
+        <div style="background:rgba(26,60,110,.06);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:var(--primary);font-weight:600;max-width:300px;margin:0 auto;display:flex;align-items:center;gap:8px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0"><circle cx="8" cy="8" r="7"/><polyline points="8 5 8 8 10 9"/></svg>
+          Link expires in <strong id="expiry-countdown" style="color:var(--primary-light)">5:00</strong>
+        </div>
         <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-size:13px;color:var(--text-muted);line-height:1.7;max-width:300px;margin:0 auto;text-align:left">
           <strong style="color:var(--primary);display:block;margin-bottom:6px">Can't find it?</strong>
           Check your <strong>Spam</strong> or <strong>Junk</strong> folder<br>
@@ -1700,7 +1708,7 @@ function renderVerifyEmail() {
         </div>
         <button id="btn-verify-login" class="btn btn-primary" style="max-width:300px">Go to Login</button>
         <button id="btn-resend-verify" class="btn btn-outline" style="max-width:300px;margin-top:-4px;font-size:13px">Resend Email</button>
-        <div id="resend-msg" style="font-size:12px;color:var(--text-muted);min-height:18px"></div>
+        <div id="resend-warn" style="font-size:12px;min-height:18px;font-weight:600;max-width:300px;text-align:center"></div>
       `}
     </div>
     </div>
@@ -2430,6 +2438,10 @@ function bindEvents() {
         await sbDoSignUp();
         window._verifyEmailSent = true;
         sessionStorage.setItem('hs_verify_email_sent', '1');
+        // Store timestamp so we can show the 5-min expiry countdown
+        const sentAt = Date.now();
+        window._verifyEmailSentAt = sentAt;
+        sessionStorage.setItem('hs_verify_email_sent_at', String(sentAt));
         render(); // re-render to show "Email sent!" state
       } catch(e) {
         const friendly =
@@ -2445,27 +2457,55 @@ function bindEvents() {
       }
     });
 
-    // "Resend Email" button
+    // "Resend Email" button — 60 second cooldown
     $('btn-resend-verify')?.addEventListener('click', async () => {
       const btn  = $('btn-resend-verify');
-      const info = $('resend-msg');
+      const warn = $('resend-warn');
       const email = window._pendingVerifyEmail || sessionStorage.getItem('hs_pending_verify_email') || '';
       if (!email) {
-        if (info) info.textContent = 'Session expired. Please go back and register again.';
+        if (warn) { warn.style.color='var(--danger)'; warn.textContent = '⚠️ Session expired. Please go back and register again.'; }
+        return;
+      }
+      // Check 60s cooldown
+      const lastResend = window._lastResendAt || 0;
+      const elapsed = Date.now() - lastResend;
+      if (elapsed < 60000) {
+        const remaining = Math.ceil((60000 - elapsed) / 1000);
+        if (warn) { warn.style.color='var(--danger)'; warn.textContent = `⏱️ Please wait ${remaining}s before resending again.`; }
         return;
       }
       if (btn) { btn.textContent = 'Resending…'; btn.disabled = true; }
+      if (warn) warn.textContent = '';
       try {
-        await sb.auth.resend({ type: 'signup', email });
-        if (info) info.textContent = 'Email resent! Check your inbox.';
+        const { error } = await sb.auth.resend({ type: 'signup', email });
+        if (error) throw error;
+        // Update sent-at timestamp for 5 min expiry countdown
+        const sentAt = Date.now();
+        window._verifyEmailSentAt = sentAt;
+        window._lastResendAt = sentAt;
+        sessionStorage.setItem('hs_verify_email_sent_at', String(sentAt));
+        if (warn) { warn.style.color='var(--success)'; warn.textContent = '✅ Email resent! Check your inbox.'; }
+        // Start 60s cooldown UI
+        let secs = 60;
+        if (btn) { btn.textContent = `Resend again in ${secs}s`; btn.disabled = true; }
+        const cd = setInterval(() => {
+          secs--;
+          const b = $('btn-resend-verify');
+          if (!b) { clearInterval(cd); return; }
+          if (secs <= 0) {
+            clearInterval(cd);
+            b.textContent = 'Resend Email';
+            b.disabled = false;
+          } else {
+            b.textContent = `Resend again in ${secs}s`;
+          }
+        }, 1000);
       } catch(e) {
         const isRateLimit = e.message?.includes('rate limit') || e.message?.includes('over_email_send_rate_limit');
-        if (info) info.textContent = isRateLimit
-          ? 'Too many emails sent. Please wait a few minutes before trying again.'
-          : 'Could not resend. Please wait a moment and try again.';
-      } finally {
+        if (warn) { warn.style.color='var(--danger)'; warn.textContent = isRateLimit
+          ? '⚠️ Too many emails sent. Please wait a few minutes before trying again.'
+          : '⚠️ Could not resend. Please wait a moment and try again.'; }
         if (btn) { btn.textContent = 'Resend Email'; btn.disabled = false; }
-        setTimeout(() => { const el = $('resend-msg'); if (el) el.textContent = ''; }, 4000);
       }
     });
   }
@@ -3805,6 +3845,25 @@ async function continueInit() {
   const hash = window.location.hash;
   const isPasswordRecovery = hash.includes('type=recovery') || hash.includes('type=magiclink');
   const isEmailVerification = hash.includes('type=signup');
+  // Detect error in hash — e.g. expired link: #error=access_denied&error_description=...
+  const isHashError = hash.includes('error=') && (hash.includes('type=signup') || hash.includes('access_denied') || hash.includes('otp_expired'));
+  if (isHashError && !isPasswordRecovery) {
+    history.replaceState(null, '', window.location.pathname);
+    // Show a friendly expired-link screen
+    document.getElementById('app').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;flex:1;width:100%;flex-direction:column;gap:16px;min-height:100vh;min-height:100dvh;background:var(--bg);padding:24px">
+        <div style="width:64px;height:64px;border-radius:50%;background:rgba(217,83,79,.1);border:2px solid rgba(217,83,79,.25);display:flex;align-items:center;justify-content:center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" style="stroke:#d9534f;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><circle cx="16" cy="16" r="14"/><line x1="16" y1="8" x2="16" y2="17"/><circle cx="16" cy="22" r="1.2" fill="#d9534f" stroke="none"/></svg>
+        </div>
+        <div style="font-size:20px;font-weight:800;color:var(--text);text-align:center">Verification Link Expired</div>
+        <p style="font-size:14px;color:var(--text-muted);line-height:1.65;max-width:300px;margin:0 auto;text-align:center">
+          This verification link has expired or already been used.<br><br>
+          Verification links are only valid for <strong style="color:var(--primary)">5 minutes</strong>. Please go back and request a new one.
+        </p>
+        <button onclick="location.href=location.pathname" style="margin-top:8px;padding:14px 28px;background:var(--grad);color:#fff;border:none;border-radius:14px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(26,60,110,.28)">Back to App</button>
+      </div>`;
+    return;
+  }
 
   // Email verification link clicked — let Supabase exchange the token first, THEN hand off
   if (isEmailVerification) {
@@ -3821,6 +3880,11 @@ async function continueInit() {
     // then strip the hash and do the tab-handoff / screen transition.
     // Using getSession() forces the SDK to exchange the hash token synchronously.
     try { await sb.auth.getSession(); } catch(_) {}
+
+    // IMPORTANT: Sign out immediately after verification so the user is not
+    // automatically logged in — they must log in manually after verifying.
+    // This prevents the "already verified link → goes to home" bug.
+    try { await sb.auth.signOut(); } catch(_) {}
 
     // Now it's safe to remove the hash from the URL
     history.replaceState(null, '', window.location.pathname);
