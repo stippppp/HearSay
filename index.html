@@ -3793,9 +3793,25 @@ async function continueInit() {
   const isPasswordRecovery = hash.includes('type=recovery') || hash.includes('type=magiclink');
   const isEmailVerification = hash.includes('type=signup');
 
-  // Email verification link clicked — hand off to existing tab if one is open
+  // Email verification link clicked — let Supabase exchange the token first, THEN hand off
   if (isEmailVerification) {
+    // Show a brief "Verifying…" state while Supabase processes the token in the hash
+    document.getElementById('app').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;flex:1;width:100%;flex-direction:column;gap:16px;min-height:100vh;min-height:100dvh">
+        <div style="width:48px;height:48px;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" style="stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);font-weight:600">Verifying your email…</div>
+      </div>`;
+
+    // Give Supabase time to pick up the hash token and confirm the email,
+    // then strip the hash and do the tab-handoff / screen transition.
+    // Using getSession() forces the SDK to exchange the hash token synchronously.
+    try { await sb.auth.getSession(); } catch(_) {}
+
+    // Now it's safe to remove the hash from the URL
     history.replaceState(null, '', window.location.pathname);
+
     let handedOff = false;
     try {
       const bcSend = new BroadcastChannel('hs_verify');
