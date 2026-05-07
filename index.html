@@ -1296,6 +1296,11 @@ async function sbDoSignUp() {
     options: { data: { display_name: name, full_name: name, course } }
   });
   if (error) throw error;
+  // Supabase silently "succeeds" for already-registered emails but returns
+  // a user with no identities — detect and surface a friendly error.
+  if (data.user && data.user.identities && data.user.identities.length === 0) {
+    throw new Error("User already registered");
+  }
   const uid = data.user?.id;
   if (!uid) throw new Error('Sign up failed — no user returned.');
   // Profile row is created by the DB trigger — may not exist yet at this point.
@@ -1707,7 +1712,7 @@ function renderVerifyEmail() {
         </p>
         <div style="background:rgba(217,83,79,.06);border:1.5px solid rgba(217,83,79,.2);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:var(--danger);font-weight:600;max-width:300px;margin:0 auto;display:flex;align-items:center;gap:8px">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" style="stroke:var(--danger);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0"><circle cx="8" cy="8" r="7"/><line x1="8" y1="5" x2="8" y2="8"/><circle cx="8" cy="11" r=".5" fill="var(--danger)" stroke="none"/></svg>
-          This link expires in <strong style="margin-left:2px">1 hour.</strong>
+          This link expires in <strong>1 hour.</strong>
         </div>
         <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-size:13px;color:var(--text-muted);line-height:1.7;max-width:300px;margin:0 auto;text-align:left">
           <strong style="color:var(--primary);display:block;margin-bottom:6px">Can't find it?</strong>
@@ -3865,6 +3870,19 @@ async function init() {
     window._hsVerifyChannel = bcv;
   } catch(_) {}
 
+  // Fallback: detect verification via Supabase auth events in case BroadcastChannel fails.
+  // Supabase fires USER_UPDATED / SIGNED_IN in all open tabs when the email link is clicked.
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if ((event === 'USER_UPDATED' || event === 'SIGNED_IN') &&
+        S.screen === 'verify-email' &&
+        session?.user?.email_confirmed_at) {
+      // Sign out so the user must log in manually, then show the success screen.
+      try { await sb.auth.signOut(); } catch(_) {}
+      S.screen = 'email-verified';
+      render();
+    }
+  });
+
   continueInit();
 }
 
@@ -3915,7 +3933,7 @@ async function continueInit() {
         <div style="font-size:20px;font-weight:800;color:var(--text);text-align:center">Verification Link Expired</div>
         <p style="font-size:14px;color:var(--text-muted);line-height:1.65;max-width:300px;margin:0 auto;text-align:center">
           This verification link has expired or already been used.<br><br>
-          Verification links are only valid for <strong style="color:var(--primary)">3 minutes</strong>. Please go back and request a new one.
+          Please go back and request a new one.
         </p>
         <button onclick="location.href=location.pathname" style="margin-top:8px;padding:14px 28px;background:var(--grad);color:#fff;border:none;border-radius:14px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(26,60,110,.28)">Back to App</button>
       </div>`;
