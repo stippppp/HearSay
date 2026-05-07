@@ -1298,10 +1298,12 @@ async function sbDoSignUp() {
   if (error) throw error;
   const uid = data.user?.id;
   if (!uid) throw new Error('Sign up failed — no user returned.');
-  // Profile row is created automatically by the database trigger on_auth_user_created.
-  // Also store the email in profiles so we can look it up later (e.g. wrong-password check).
+  // Profile row is created by the DB trigger — may not exist yet at this point.
+  // Store the registered email in localStorage so the wrong-password check
+  // can reliably tell "account exists" vs "no account" without a DB race condition.
   try {
-    await sb.from('profiles').update({ email }).eq('id', uid);
+    const known = JSON.parse(localStorage.getItem('hs_known_emails') || '[]');
+    if (!known.includes(email)) { known.push(email); localStorage.setItem('hs_known_emails', JSON.stringify(known)); }
   } catch(_) {}
   return { id: uid, name, email, course, avatar: name.substring(0,2).toUpperCase(), profilePic: '' };
 }
@@ -1312,10 +1314,11 @@ async function sbSignIn(email, password) {
   const uid = data.user.id;
   const { data: prof, error: pe } = await sb.from('profiles').select('*').eq('id', uid).single();
   if (pe || !prof) throw new Error('Profile not found.');
-  // Backfill email into profiles if missing — ensures future wrong-password checks work
-  if (!prof.email) {
-    try { await sb.from('profiles').update({ email }).eq('id', uid); } catch(_) {}
-  }
+  // Add to known emails on every successful login (covers pre-existing accounts)
+  try {
+    const known = JSON.parse(localStorage.getItem('hs_known_emails') || '[]');
+    if (!known.includes(email)) { known.push(email); localStorage.setItem('hs_known_emails', JSON.stringify(known)); }
+  } catch(_) {}
   return { id: uid, name: prof.name, email: data.user.email, course: prof.course || '', avatar: prof.avatar || prof.name.substring(0,2).toUpperCase(), profilePic: prof.profile_pic || '' };
 }
 
@@ -2427,9 +2430,11 @@ function bindEvents() {
       sessionStorage.removeItem('hs_verify_email_sent');
       sessionStorage.removeItem('hs_verify_email_sent_at');
       sessionStorage.removeItem('hs_pending_signup');
+      sessionStorage.removeItem('hs_last_resend_at');
       window._pendingVerifyEmail = null;
       window._verifyEmailSent = false;
       window._pendingSignUp = null;
+      window._lastResendAt = 0;
       loginTab='register'; go('login');
     });
     $('btn-verify-login')?.addEventListener('click', () => {
@@ -2464,7 +2469,7 @@ function bindEvents() {
       }
     });
 
-    // "Resend Email" button — re-calls signUp() with the same credentials (most reliable resend method)
+    // "Resend Email" button
     $('btn-resend-verify')?.addEventListener('click', async () => {
       const btn  = $('btn-resend-verify');
       const warn = $('resend-warn');
@@ -2476,12 +2481,12 @@ function bindEvents() {
         } catch(_) {}
       }
       const email = window._pendingVerifyEmail || sessionStorage.getItem('hs_pending_verify_email') || window._pendingSignUp?.email || '';
-      if (!email || !window._pendingSignUp) {
+      if (!email) {
         if (warn) { warn.style.color='var(--danger)'; warn.textContent = 'Session expired. Please go back and register again.'; }
         return;
       }
-      // Check 60s cooldown
-      const lastResend = window._lastResendAt || 0;
+      // Check 60s cooldown — persisted in sessionStorage so it survives re-renders
+      const lastResend = Number(sessionStorage.getItem('hs_last_resend_at') || '0');
       const elapsed = Date.now() - lastResend;
       if (elapsed < 60000) {
         const remaining = Math.ceil((60000 - elapsed) / 1000);
@@ -2491,20 +2496,28 @@ function bindEvents() {
       if (btn) { btn.textContent = 'Resending…'; btn.disabled = true; }
       if (warn) warn.textContent = '';
       try {
-        // Calling signUp() again with the same email+password is the most reliable way
-        // to resend a verification email in Supabase. For an unconfirmed account it
-        // issues a brand-new OTP and invalidates the previous one automatically.
-        const { name, password, course } = window._pendingSignUp;
-        const { error } = await sb.auth.signUp({
-          email,
-          password,
-          options: { data: { display_name: name, full_name: name, course } }
-        });
-        // "User already registered" with email_confirmed_at = null means resend succeeded
-        if (error && !error.message?.includes('already registered') && !error.message?.includes('User already')) {
-          throw error;
+        // Primary: auth.resend() — only needs the email, works even after page refresh.
+        // Falls back to signUp() with same credentials if _pendingSignUp is still available.
+        let resendError = null;
+        const { error: re } = await sb.auth.resend({ type: 'signup', email });
+        resendError = re;
+        // If resend() failed and we still have the original credentials, try signUp() instead
+        if (resendError && window._pendingSignUp) {
+          const { name, password, course } = window._pendingSignUp;
+          const { error: su } = await sb.auth.signUp({
+            email, password,
+            options: { data: { display_name: name, full_name: name, course } }
+          });
+          // "already registered" on signUp means the resend went through
+          if (su && !su.message?.includes('already registered') && !su.message?.includes('User already')) {
+            throw su;
+          }
+          resendError = null;
         }
-        window._lastResendAt = Date.now();
+        if (resendError) throw resendError;
+        const now = Date.now();
+        window._lastResendAt = now;
+        sessionStorage.setItem('hs_last_resend_at', String(now));
         if (warn) { warn.style.color='var(--success)'; warn.textContent = 'New verification email sent! The previous link is now invalid.'; }
         // Start 60s cooldown UI
         let secs = 60;
@@ -2529,6 +2542,25 @@ function bindEvents() {
         if (btn) { btn.textContent = 'Resend Email'; btn.disabled = false; }
       }
     });
+
+    // Restore cooldown UI on re-render (e.g. after screen transition back to this page)
+    const _lastR = Number(sessionStorage.getItem('hs_last_resend_at') || '0');
+    const _remaining = 60000 - (Date.now() - _lastR);
+    if (_lastR && _remaining > 0) {
+      const _btn = $('btn-resend-verify');
+      if (_btn) {
+        let _secs = Math.ceil(_remaining / 1000);
+        _btn.textContent = `Resend again in ${_secs}s`;
+        _btn.disabled = true;
+        const _cd = setInterval(() => {
+          _secs--;
+          const b = $('btn-resend-verify');
+          if (!b) { clearInterval(_cd); return; }
+          if (_secs <= 0) { clearInterval(_cd); b.textContent = 'Resend Email'; b.disabled = false; }
+          else b.textContent = `Resend again in ${_secs}s`;
+        }, 1000);
+      }
+    }
   }
 
   /* EMAIL VERIFIED SUCCESS */
@@ -2864,16 +2896,12 @@ function bindEvents() {
           // Auth succeeded but no profile row — account not fully set up
           friendly = 'No account found with this Student ID. Please register first.';
         } else if (e.message?.includes('Invalid login') || e.message?.includes('invalid_credentials')) {
-          // Supabase returns "Invalid login credentials" for BOTH wrong password AND non-existent user.
-          // We disambiguate by checking the profiles table for a row matching this email.
-          // The email column is backfilled on every registration and every successful login,
-          // so it covers all active accounts. New accounts always have it from registration.
+          // Supabase gives the same error for wrong password AND non-existent account.
+          // We check localStorage for a list of emails registered on this device.
+          // This is written on registration and on every successful login, so it's always accurate.
           try {
-            const { data: existing } = await sb.from('profiles')
-              .select('id')
-              .eq('email', email)
-              .maybeSingle();
-            friendly = existing
+            const known = JSON.parse(localStorage.getItem('hs_known_emails') || '[]');
+            friendly = known.includes(email)
               ? 'Incorrect password. Please try again.'
               : 'No account found with this Student ID. Please register first.';
           } catch(_) {
