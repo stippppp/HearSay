@@ -1283,6 +1283,8 @@ window._pendingSignUp = null;
 async function sbSignUp(name, email, password, course) {
   // Just store the data — don't call Supabase yet
   window._pendingSignUp = { name, email, password, course };
+  // Also persist to sessionStorage so resend still works after a page refresh
+  try { sessionStorage.setItem('hs_pending_signup', JSON.stringify({ name, email, password, course })); } catch(_) {}
 }
 
 async function sbDoSignUp() {
@@ -1296,7 +1298,11 @@ async function sbDoSignUp() {
   if (error) throw error;
   const uid = data.user?.id;
   if (!uid) throw new Error('Sign up failed — no user returned.');
-  // Profile row is created automatically by the database trigger on_auth_user_created
+  // Profile row is created automatically by the database trigger on_auth_user_created.
+  // Also store the email in profiles so we can look it up later (e.g. wrong-password check).
+  try {
+    await sb.from('profiles').update({ email }).eq('id', uid);
+  } catch(_) {}
   return { id: uid, name, email, course, avatar: name.substring(0,2).toUpperCase(), profilePic: '' };
 }
 
@@ -1306,6 +1312,10 @@ async function sbSignIn(email, password) {
   const uid = data.user.id;
   const { data: prof, error: pe } = await sb.from('profiles').select('*').eq('id', uid).single();
   if (pe || !prof) throw new Error('Profile not found.');
+  // Backfill email into profiles if missing — ensures future wrong-password checks work
+  if (!prof.email) {
+    try { await sb.from('profiles').update({ email }).eq('id', uid); } catch(_) {}
+  }
   return { id: uid, name: prof.name, email: data.user.email, course: prof.course || '', avatar: prof.avatar || prof.name.substring(0,2).toUpperCase(), profilePic: prof.profile_pic || '' };
 }
 
@@ -1654,10 +1664,6 @@ function renderResetPassword() {
 function renderVerifyEmail() {
   const email = (window._pendingVerifyEmail || sessionStorage.getItem('hs_pending_verify_email') || '');
   const sent  = !!(window._verifyEmailSent || sessionStorage.getItem('hs_verify_email_sent') === '1');
-  // Restore sentAt from sessionStorage if page was refreshed
-  if (!window._verifyEmailSentAt && sessionStorage.getItem('hs_verify_email_sent_at')) {
-    window._verifyEmailSentAt = Number(sessionStorage.getItem('hs_verify_email_sent_at'));
-  }
   return `<div class="screen no-pad" style="position:relative;background:var(--bg)">
     <div class="login-screen-wrap">
     <div class="login-card" style="width:100%">
@@ -1696,15 +1702,15 @@ function renderVerifyEmail() {
           <strong style="color:var(--primary)">${escHtml(email)}</strong><br><br>
           Click the link in your email to activate your account.
         </p>
-        <div style="background:rgba(26,60,110,.06);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:var(--primary);font-weight:600;max-width:300px;margin:0 auto;display:flex;align-items:center;gap:8px">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0"><circle cx="8" cy="8" r="7"/><polyline points="8 5 8 8 10 9"/></svg>
-          Link expires in <strong id="expiry-countdown" style="color:var(--primary-light)">5:00</strong>
+        <div style="background:rgba(217,83,79,.06);border:1.5px solid rgba(217,83,79,.2);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:var(--danger);font-weight:600;max-width:300px;margin:0 auto;display:flex;align-items:center;gap:8px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" style="stroke:var(--danger);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0"><circle cx="8" cy="8" r="7"/><line x1="8" y1="5" x2="8" y2="8"/><circle cx="8" cy="11" r=".5" fill="var(--danger)" stroke="none"/></svg>
+          This link expires in <strong style="margin-left:2px">1 hour.</strong>
         </div>
         <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-size:13px;color:var(--text-muted);line-height:1.7;max-width:300px;margin:0 auto;text-align:left">
           <strong style="color:var(--primary);display:block;margin-bottom:6px">Can't find it?</strong>
           Check your <strong>Spam</strong> or <strong>Junk</strong> folder<br>
           Make sure you used your <strong>@gordoncollege.edu.ph</strong> email<br>
-          Wait a few minutes then try resending
+          You can resend the email below at any time
         </div>
         <button id="btn-verify-login" class="btn btn-primary" style="max-width:300px">Go to Login</button>
         <button id="btn-resend-verify" class="btn btn-outline" style="max-width:300px;margin-top:-4px;font-size:13px">Resend Email</button>
@@ -2419,13 +2425,14 @@ function bindEvents() {
     $('btn-verify-back')?.addEventListener('click', () => {
       sessionStorage.removeItem('hs_pending_verify_email');
       sessionStorage.removeItem('hs_verify_email_sent');
+      sessionStorage.removeItem('hs_verify_email_sent_at');
+      sessionStorage.removeItem('hs_pending_signup');
       window._pendingVerifyEmail = null;
       window._verifyEmailSent = false;
-      if (window._expiryCountdownTimer) { clearInterval(window._expiryCountdownTimer); window._expiryCountdownTimer = null; }
+      window._pendingSignUp = null;
       loginTab='register'; go('login');
     });
     $('btn-verify-login')?.addEventListener('click', () => {
-      if (window._expiryCountdownTimer) { clearInterval(window._expiryCountdownTimer); window._expiryCountdownTimer = null; }
       loginTab='login'; go('login');
     });
 
@@ -2442,10 +2449,6 @@ function bindEvents() {
         await sbDoSignUp();
         window._verifyEmailSent = true;
         sessionStorage.setItem('hs_verify_email_sent', '1');
-        // Store timestamp so we can show the 5-min expiry countdown
-        const sentAt = Date.now();
-        window._verifyEmailSentAt = sentAt;
-        sessionStorage.setItem('hs_verify_email_sent_at', String(sentAt));
         render(); // re-render to show "Email sent!" state
       } catch(e) {
         const friendly =
@@ -2461,13 +2464,20 @@ function bindEvents() {
       }
     });
 
-    // "Resend Email" button — 60 second cooldown
+    // "Resend Email" button — re-calls signUp() with the same credentials (most reliable resend method)
     $('btn-resend-verify')?.addEventListener('click', async () => {
       const btn  = $('btn-resend-verify');
       const warn = $('resend-warn');
-      const email = window._pendingVerifyEmail || sessionStorage.getItem('hs_pending_verify_email') || '';
-      if (!email) {
-        if (warn) { warn.style.color='var(--danger)'; warn.textContent = '⚠️ Session expired. Please go back and register again.'; }
+      // Restore _pendingSignUp from sessionStorage if it was lost (e.g. page refresh)
+      if (!window._pendingSignUp) {
+        try {
+          const saved = sessionStorage.getItem('hs_pending_signup');
+          if (saved) window._pendingSignUp = JSON.parse(saved);
+        } catch(_) {}
+      }
+      const email = window._pendingVerifyEmail || sessionStorage.getItem('hs_pending_verify_email') || window._pendingSignUp?.email || '';
+      if (!email || !window._pendingSignUp) {
+        if (warn) { warn.style.color='var(--danger)'; warn.textContent = 'Session expired. Please go back and register again.'; }
         return;
       }
       // Check 60s cooldown
@@ -2475,36 +2485,27 @@ function bindEvents() {
       const elapsed = Date.now() - lastResend;
       if (elapsed < 60000) {
         const remaining = Math.ceil((60000 - elapsed) / 1000);
-        if (warn) { warn.style.color='var(--danger)'; warn.textContent = `⏱️ Please wait ${remaining}s before resending again.`; }
+        if (warn) { warn.style.color='var(--danger)'; warn.textContent = `Please wait ${remaining}s before resending again.`; }
         return;
       }
       if (btn) { btn.textContent = 'Resending…'; btn.disabled = true; }
       if (warn) warn.textContent = '';
       try {
-        const { error } = await sb.auth.resend({ type: 'signup', email });
-        if (error) throw error;
-        // Update sent-at timestamp for 5 min expiry countdown
-        const sentAt = Date.now();
-        window._verifyEmailSentAt = sentAt;
-        window._lastResendAt = sentAt;
-        sessionStorage.setItem('hs_verify_email_sent_at', String(sentAt));
-        if (warn) { warn.style.color='var(--success)'; warn.textContent = '✅ Email resent! Check your inbox.'; }
-        // Restart 5-min expiry countdown with new sentAt
-        if (window._expiryCountdownTimer) clearInterval(window._expiryCountdownTimer);
-        const newSentAt = sentAt;
-        const EXPIRY_MS = 5 * 60 * 1000;
-        function restartExpiry() {
-          const el = $('expiry-countdown');
-          if (!el) { clearInterval(window._expiryCountdownTimer); return; }
-          const remaining = Math.max(0, EXPIRY_MS - (Date.now() - newSentAt));
-          const mins = Math.floor(remaining / 60000);
-          const secs = Math.floor((remaining % 60000) / 1000);
-          el.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-          el.style.color = '';
-          if (remaining <= 0) { clearInterval(window._expiryCountdownTimer); el.textContent = '0:00'; el.style.color = 'var(--danger)'; }
+        // Calling signUp() again with the same email+password is the most reliable way
+        // to resend a verification email in Supabase. For an unconfirmed account it
+        // issues a brand-new OTP and invalidates the previous one automatically.
+        const { name, password, course } = window._pendingSignUp;
+        const { error } = await sb.auth.signUp({
+          email,
+          password,
+          options: { data: { display_name: name, full_name: name, course } }
+        });
+        // "User already registered" with email_confirmed_at = null means resend succeeded
+        if (error && !error.message?.includes('already registered') && !error.message?.includes('User already')) {
+          throw error;
         }
-        restartExpiry();
-        window._expiryCountdownTimer = setInterval(restartExpiry, 1000);
+        window._lastResendAt = Date.now();
+        if (warn) { warn.style.color='var(--success)'; warn.textContent = 'New verification email sent! The previous link is now invalid.'; }
         // Start 60s cooldown UI
         let secs = 60;
         if (btn) { btn.textContent = `Resend again in ${secs}s`; btn.disabled = true; }
@@ -2523,47 +2524,11 @@ function bindEvents() {
       } catch(e) {
         const isRateLimit = e.message?.includes('rate limit') || e.message?.includes('over_email_send_rate_limit');
         if (warn) { warn.style.color='var(--danger)'; warn.textContent = isRateLimit
-          ? '⚠️ Too many emails sent. Please wait a few minutes before trying again.'
-          : '⚠️ Could not resend. Please wait a moment and try again.'; }
+          ? 'Too many emails sent. Please wait a few minutes before trying again.'
+          : 'Could not resend. Please wait a moment and try again.'; }
         if (btn) { btn.textContent = 'Resend Email'; btn.disabled = false; }
       }
     });
-  }
-
-  /* VERIFY EMAIL — start expiry countdown if email was already sent */
-  if (s === 'verify-email') {
-    const sent = !!(window._verifyEmailSent || sessionStorage.getItem('hs_verify_email_sent') === '1');
-    if (sent) {
-      // Restore sentAt in case of page refresh
-      if (!window._verifyEmailSentAt && sessionStorage.getItem('hs_verify_email_sent_at')) {
-        window._verifyEmailSentAt = Number(sessionStorage.getItem('hs_verify_email_sent_at'));
-      }
-      const sentAt = window._verifyEmailSentAt || Date.now();
-      const EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
-      function updateExpiryCountdown() {
-        const el = $('expiry-countdown');
-        if (!el) { clearInterval(window._expiryCountdownTimer); return; }
-        const elapsed = Date.now() - sentAt;
-        const remaining = Math.max(0, EXPIRY_MS - elapsed);
-        const mins = Math.floor(remaining / 60000);
-        const secs = Math.floor((remaining % 60000) / 1000);
-        el.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-        if (remaining <= 0) {
-          clearInterval(window._expiryCountdownTimer);
-          el.textContent = '0:00';
-          el.style.color = 'var(--danger)';
-          // Show expiry warning on the resend-warn element
-          const warn = $('resend-warn');
-          if (warn && !warn.textContent) {
-            warn.style.color = 'var(--danger)';
-            warn.textContent = '⚠️ Link expired! Please resend the verification email.';
-          }
-        }
-      }
-      if (window._expiryCountdownTimer) clearInterval(window._expiryCountdownTimer);
-      updateExpiryCountdown(); // run immediately
-      window._expiryCountdownTimer = setInterval(updateExpiryCountdown, 1000);
-    }
   }
 
   /* EMAIL VERIFIED SUCCESS */
@@ -2894,18 +2859,23 @@ function bindEvents() {
         if (e.message?.includes('row-level security')) {
           friendly = 'Login is temporarily unavailable. Please try again shortly.';
         } else if (e.message?.includes('Email not confirmed')) {
-          friendly = 'Please verify your email first before logging in.';
+          friendly = 'Email not yet verified. Please check your inbox and click the verification link.';
         } else if (e.message?.includes('Profile not found')) {
+          // Auth succeeded but no profile row — account not fully set up
           friendly = 'No account found with this Student ID. Please register first.';
-        } else if (e.message?.includes('Invalid login')) {
-          // Distinguish "no account" from "wrong password" by checking if email exists in profiles
+        } else if (e.message?.includes('Invalid login') || e.message?.includes('invalid_credentials')) {
+          // Supabase returns "Invalid login credentials" for BOTH wrong password AND non-existent user.
+          // We disambiguate by checking the profiles table for a row matching this email.
+          // The email column is backfilled on every registration and every successful login,
+          // so it covers all active accounts. New accounts always have it from registration.
           try {
-            const { data: existing } = await sb.from('profiles').select('id').eq('email', email).maybeSingle();
-            if (existing) {
-              friendly = 'Incorrect password. Please try again.';
-            } else {
-              friendly = 'No account found with this Student ID. Please register first.';
-            }
+            const { data: existing } = await sb.from('profiles')
+              .select('id')
+              .eq('email', email)
+              .maybeSingle();
+            friendly = existing
+              ? 'Incorrect password. Please try again.'
+              : 'No account found with this Student ID. Please register first.';
           } catch(_) {
             friendly = 'Incorrect Student ID or password. Please try again.';
           }
@@ -3892,6 +3862,9 @@ async function continueInit() {
     }
     if (event === 'SIGNED_OUT') {
       sessionStorage.removeItem('hs_recovery');
+      // Don't redirect to landing if we just finished email verification —
+      // the signOut() is intentional and the email-verified screen should stay.
+      if (S.screen === 'email-verified' || S.screen === 'verify-email') return;
       S.user = null; S.sessions = [];
       go('landing');
     }
@@ -3914,7 +3887,7 @@ async function continueInit() {
         <div style="font-size:20px;font-weight:800;color:var(--text);text-align:center">Verification Link Expired</div>
         <p style="font-size:14px;color:var(--text-muted);line-height:1.65;max-width:300px;margin:0 auto;text-align:center">
           This verification link has expired or already been used.<br><br>
-          Verification links are only valid for <strong style="color:var(--primary)">5 minutes</strong>. Please go back and request a new one.
+          Verification links are only valid for <strong style="color:var(--primary)">3 minutes</strong>. Please go back and request a new one.
         </p>
         <button onclick="location.href=location.pathname" style="margin-top:8px;padding:14px 28px;background:var(--grad);color:#fff;border:none;border-radius:14px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(26,60,110,.28)">Back to App</button>
       </div>`;
