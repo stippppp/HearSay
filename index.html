@@ -1804,7 +1804,7 @@ function renderResetPassword() {
     </div>
     <div class="login-body">
       <div style="text-align:center;padding:8px 0 4px">
-        <div style="font-size:36px;margin-bottom:8px">🔐</div>
+        <div style="font-size:36px;margin-bottom:8px"></div>
         <p style="font-size:14px;color:var(--text-muted);line-height:1.6">You followed a password reset link.<br>Choose a new password for your account.</p>
       </div>
       <div class="input-group">
@@ -3034,7 +3034,7 @@ function bindEvents() {
       if (error) showMsg(msg, 'Error: ' + error.message);
       else {
         msg.className = 'msg msg-success show';
-        msg.textContent = '✅ Reset link sent! Check your @gordoncollege.edu.ph inbox.';
+        msg.textContent = 'Reset link sent! Check your @gordoncollege.edu.ph inbox.';
         btn.disabled = true;
       }
     });
