@@ -1823,7 +1823,10 @@ function renderResetPassword() {
       </div>
       <div class="input-group">
         <label class="input-label" for="rp-confirm">Confirm Password</label>
-        <input id="rp-confirm" class="input" type="password" placeholder="Re-enter your new password" autocomplete="new-password"/>
+        <div class="input-wrap">
+          <input id="rp-confirm" class="input" type="password" placeholder="Re-enter your new password" autocomplete="new-password" style="padding-right:46px"/>
+          <button class="input-eye" id="rp-eye2" type="button">${ic('i-eye',16,16)}</button>
+        </div>
       </div>
       <div id="rp-msg" class="msg"></div>
       <button id="btn-rp-submit" class="btn btn-primary">Set New Password</button>
@@ -2626,7 +2629,10 @@ function renderSettings() {
                 <div class="pw-rule" id="pw-rule-num" data-label="One number (0–9)"></div>
                 <div class="pw-rule" id="pw-rule-sym" data-label="One special character (!@#$…)"></div>
               </div>
-              <input id="pw-confirm" class="input" type="password" placeholder="Confirm new password" />
+              <div class="input-wrap">
+                <input id="pw-confirm" class="input" type="password" placeholder="Confirm new password" style="padding-right:46px"/>
+                <button class="input-eye" id="pw-eye2" type="button">${ic('i-eye',16,16)}</button>
+              </div>
               <div id="pw-msg" class="msg"></div>
               <button id="btn-update-pw" class="btn btn-primary btn-sm">Update Password</button>
             </div>` : ''}
@@ -3042,6 +3048,7 @@ function bindEvents() {
 
   if (s === 'reset-password') {
     $('rp-eye')?.addEventListener('click', () => toggleEye('rp-new','rp-eye'));
+    $('rp-eye2')?.addEventListener('click', () => toggleEye('rp-confirm','rp-eye2'));
     // Live criteria checker for reset password
     const rpRules = {
       'rp-rule-len': () => ($('rp-new')?.value||'').length >= 8,
@@ -3411,6 +3418,7 @@ function bindEvents() {
     $('tog-auto')?.addEventListener('change', e => { S.settings.autoSummarize=e.target.checked; persistSettings(); });
     $('btn-toggle-pw')?.addEventListener('click', () => { showPwPanel=!showPwPanel; render(); });
     $('pw-eye')?.addEventListener('click', () => toggleEye('pw-new','pw-eye'));
+    $('pw-eye2')?.addEventListener('click', () => toggleEye('pw-confirm','pw-eye2'));
     // Live criteria checker for change password
     const pwSettingsRules = {
       'pw-rule-len': () => ($('pw-new')?.value||'').length >= 8,
