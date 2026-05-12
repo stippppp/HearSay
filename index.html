@@ -3302,7 +3302,11 @@ function bindEvents() {
       window._qrPoll = setInterval(async function() {
         if (Date.now() > expiry) { clearInterval(window._qrPoll); window._qrPoll = null; return; }
         try {
-          var res = await sb.from('qr_sessions').select('confirmed,user_id').eq('token', token).eq('confirmed', true).maybeSingle();
+          var res = await sb.from('qr_sessions')
+            .select('confirmed,user_id,user_name,user_course,user_avatar,user_profile_pic')
+            .eq('token', token)
+            .eq('confirmed', true)
+            .maybeSingle();
           if (res.data && res.data.confirmed && res.data.user_id) {
             clearInterval(window._qrPoll);  window._qrPoll  = null;
             clearInterval(window._qrTimer); window._qrTimer = null;
@@ -3310,25 +3314,21 @@ function bindEvents() {
             if (timerEl)  timerEl.textContent = '';
             if (barWrap)  barWrap.style.display = 'none';
 
-            // Fetch profile — don't catch-and-bail; show a real error if it fails
-            var profRes = await sb.from('profiles').select('*').eq('id', res.data.user_id).single();
-            if (profRes.data) {
-              var prof = profRes.data;
-              S.user = {
-                id:         prof.id,
-                name:       prof.name,
-                email:      prof.email || '',
-                course:     prof.course || '',
-                avatar:     prof.avatar || prof.name.substring(0,2).toUpperCase(),
-                profilePic: prof.profile_pic || ''
-              };
-              S.screen = 'dashboard'; S.tab = 'home';
-              render();
-              // Load sessions in the background after rendering — don't block login on it
-              loadSessionsFromSupabase().then(() => render()).catch(function(){});
-            } else {
-              if (statusEl) { statusEl.textContent = 'Login failed — profile not found.'; statusEl.style.color = 'rgba(255,110,110,.9)'; }
-            }
+            // Build user directly from qr_sessions — no separate profile fetch needed
+            // (avoids RLS blocking an unauthenticated desktop read on the profiles table)
+            var d = res.data;
+            S.user = {
+              id:         d.user_id,
+              name:       d.user_name        || 'User',
+              email:      '',
+              course:     d.user_course      || '',
+              avatar:     d.user_avatar      || (d.user_name || 'U').substring(0,2).toUpperCase(),
+              profilePic: d.user_profile_pic || ''
+            };
+            S.screen = 'dashboard'; S.tab = 'home';
+            render();
+            // Load sessions in the background after rendering — don't block login on it
+            loadSessionsFromSupabase().then(() => render()).catch(function(){});
           }
         } catch(e) { /* network blip, retry next tick */ }
       }, 2000);
@@ -3688,9 +3688,17 @@ function bindEvents() {
             _sqrStop();
             if (statusEl) { statusEl.textContent = 'QR detected! Confirming…'; statusEl.style.color = 'var(--success)'; }
             try {
-              // Mark the token as confirmed with the current user's ID
+              // Mark the token as confirmed and embed the full profile so
+              // the desktop can read it back without needing its own auth session
               var { error } = await sb.from('qr_sessions')
-                .update({ confirmed: true, user_id: S.user.id })
+                .update({
+                  confirmed:        true,
+                  user_id:          S.user.id,
+                  user_name:        S.user.name        || '',
+                  user_course:      S.user.course      || '',
+                  user_avatar:      S.user.avatar      || '',
+                  user_profile_pic: S.user.profilePic  || ''
+                })
                 .eq('token', token)
                 .eq('confirmed', false);
               if (error) throw error;
