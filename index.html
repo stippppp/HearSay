@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -3631,35 +3632,43 @@ function bindEvents() {
       var statusEl = $('sqr-status');
       var msgEl    = $('sqr-msg');
       try {
-        _sqrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        _sqrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
         var video  = $('sqr-video');
         var canvas = $('sqr-canvas');
         if (!video || !canvas) return;
         video.srcObject = _sqrStream;
         if (statusEl) statusEl.textContent = 'Point at the QR code on desktop';
 
-        // Use BarcodeDetector if available, else jsQR polyfill approach
+        // Prefer BarcodeDetector (fast, native), fall back to jsQR (reliable, universal)
         var detector = null;
         if ('BarcodeDetector' in window) {
           try { detector = new BarcodeDetector({ formats: ['qr_code'] }); } catch(_) {}
         }
+        var ctx = canvas.getContext('2d');
+        var _scanning = false;
 
         async function _sqrScan() {
           if (_sqrDone) return;
+          // Prevent overlapping async calls
+          if (_scanning) { _sqrRaf = requestAnimationFrame(_sqrScan); return; }
+          _scanning = true;
           var token = null;
           try {
             if (detector) {
+              // Native BarcodeDetector path
               var barcodes = await detector.detect(video);
               if (barcodes.length > 0) token = barcodes[0].rawValue;
-            } else {
-              // canvas-based fallback
-              var ctx = canvas.getContext('2d');
+            } else if (typeof jsQR !== 'undefined' && video.readyState === video.HAVE_ENOUGH_DATA) {
+              // jsQR canvas path — works on Android Chrome, iOS Safari, everywhere
               canvas.width  = video.videoWidth;
               canvas.height = video.videoHeight;
-              ctx.drawImage(video, 0, 0);
-              // Basic: try to read via a hidden image decode — limited without jsQR
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+              if (code) token = code.data;
             }
           } catch(_) {}
+          _scanning = false;
 
           if (token && token.startsWith('hs_qr_')) {
             _sqrStop();
@@ -3683,6 +3692,8 @@ function bindEvents() {
         }
 
         video.addEventListener('loadedmetadata', () => { _sqrRaf = requestAnimationFrame(_sqrScan); }, { once: true });
+        // Also trigger if video already has data (some browsers fire loadedmetadata before srcObject assignment)
+        if (video.readyState >= video.HAVE_METADATA) { _sqrRaf = requestAnimationFrame(_sqrScan); }
       } catch(e) {
         if (statusEl) statusEl.textContent = 'Camera access denied';
         if (msgEl) showMsg(msgEl, 'Please allow camera access to scan the QR code.', 'error');
