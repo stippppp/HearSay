@@ -413,6 +413,9 @@
     }
     .btn-ghost:hover { background: rgba(255,255,255,.16); }
     .btn-ghost:active { transform: scale(.97); }
+    /* Hide QR login button on mobile/touch devices — only useful on desktop */
+    .btn-qr-desktop { display: none !important; }
+    @media (min-width: 900px) and (pointer: fine) { .btn-qr-desktop { display: flex !important; } }
 
     /* ── LOGIN ── */
     .login-header {
@@ -1614,7 +1617,7 @@ function go(screen, opts={}) {
 
 function render() {
   applySettings();
-  const noNavScreens = new Set(['landing','login','session','session-live','reset-password','verify-email','email-verified','forgot-password']);
+  const noNavScreens = new Set(['landing','login','session','session-live','reset-password','verify-email','email-verified','forgot-password','qr-login']);
   const showNav = S.user && !noNavScreens.has(S.screen);
 
   const screens = {
@@ -1624,6 +1627,7 @@ function render() {
     'email-verified': renderEmailVerified,
     'reset-password': renderResetPassword,
     'forgot-password': renderForgotPassword,
+    'qr-login':       renderQRLogin,
     'dashboard':      renderDashboard,
     'session':        renderSessionSetup,
     'session-live':   renderSessionLive,
@@ -1744,10 +1748,44 @@ function renderLanding() {
       <div class="landing-actions">
         <button class="btn-white" id="btn-land-start">Get Started</button>
         <button class="btn-ghost" id="btn-land-login">I already have an account</button>
+        <button class="btn-ghost btn-qr-desktop" id="btn-land-qr" style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;padding:12px">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="19" y="14" width="2" height="2"/><rect x="14" y="19" width="2" height="2"/><rect x="18" y="18" width="3" height="3"/></svg>
+          Log in with QR Code
+        </button>
       </div>
     </div>
   </div>`;
 }
+
+/* ── QR LOGIN ── */
+function renderQRLogin() {
+  return `<div class="screen no-pad hide-global-badge" style="position:relative;min-height:100vh;min-height:100dvh;background:linear-gradient(175deg,#020b18 0%,#071428 30%,#0a1e40 60%,#0f2548 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;overflow-y:auto">
+    <div style="position:absolute;top:16px;left:16px;z-index:2;display:flex;align-items:center;gap:10px">
+      <button class="login-back" id="btn-qr-back" style="margin-right:0">${ic('i-back',18,18)}</button>
+      <span style="font-size:13px;font-weight:600;color:rgba(180,215,255,.75)">Back</span>
+    </div>
+    <div style="text-align:center;width:100%;max-width:340px;position:relative;z-index:1">
+      <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;text-shadow:0 0 24px rgba(130,200,255,0.7);margin-bottom:4px">HearSay</div>
+      <div style="font-size:14px;font-weight:600;color:rgba(160,200,255,.8);margin-bottom:24px">Log in with QR Code</div>
+      <div style="background:rgba(255,255,255,.06);border:1.5px solid rgba(130,200,255,.18);border-radius:20px;padding:24px 20px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
+        <div id="qr-wrap" style="background:#fff;border-radius:12px;padding:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 0 32px rgba(74,144,217,0.2);min-width:180px;min-height:180px">
+          <div id="qr-placeholder" style="width:180px;height:180px;display:flex;align-items:center;justify-content:center">
+            <div style="width:28px;height:28px;border:3px solid #cce0f5;border-top-color:#1a3c6e;border-radius:50%;animation:spin .8s linear infinite"></div>
+          </div>
+        </div>
+        <div id="qr-status" style="font-size:14px;font-weight:700;color:rgba(160,200,255,.95);margin-bottom:6px">Generating code...</div>
+        <div style="font-size:12px;color:rgba(130,170,220,.7);line-height:1.65;margin-bottom:12px">Open HearSay on your phone,<br>go to <strong style="color:rgba(180,215,255,.9)">Profile &rarr; Scan QR Code</strong><br>and point it at this code to log in.</div>
+        <div id="qr-timer-bar-wrap" style="background:rgba(255,255,255,.08);border-radius:100px;height:4px;margin:0 auto 8px;max-width:200px;overflow:hidden;display:none">
+          <div id="qr-timer-bar" style="height:100%;background:rgba(74,144,217,.8);border-radius:100px;transition:width .9s linear;width:100%"></div>
+        </div>
+        <div id="qr-timer" style="font-size:11px;font-weight:700;color:rgba(160,200,255,.5);letter-spacing:.08em;margin-bottom:4px"></div>
+        <button id="btn-qr-refresh" style="display:none;margin-top:10px;padding:9px 18px;background:rgba(74,144,217,.2);border:1px solid rgba(74,144,217,.35);border-radius:10px;color:rgba(180,215,255,.9);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:.02em">Refresh Code</button>
+      </div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  </div>`;
+}
+
 
 /* ── RESET PASSWORD ── */
 function renderForgotPassword() {
@@ -1878,7 +1916,7 @@ function renderVerifyEmail() {
         </p>
         <div style="background:rgba(217,83,79,.06);border:1.5px solid rgba(217,83,79,.2);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:var(--danger);font-weight:600;max-width:300px;margin:0 auto;display:flex;align-items:center;gap:8px">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" style="stroke:var(--danger);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0"><circle cx="8" cy="8" r="7"/><line x1="8" y1="5" x2="8" y2="8"/><circle cx="8" cy="11" r=".5" fill="var(--danger)" stroke="none"/></svg>
-          This link expires in <strong>1 hour.</strong>
+          Link expires in <strong id="verify-countdown">59:59</strong>
         </div>
         <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;font-size:13px;color:var(--text-muted);line-height:1.7;max-width:300px;margin:0 auto;text-align:left">
           <strong style="color:var(--primary);display:block;margin-bottom:6px">Can't find it?</strong>
@@ -2683,7 +2721,9 @@ function bindEvents() {
       try {
         await sbDoSignUp();
         window._verifyEmailSent = true;
+        window._verifyEmailSentAt = Date.now();
         sessionStorage.setItem('hs_verify_email_sent', '1');
+        sessionStorage.setItem('hs_verify_email_sent_at', String(Date.now()));
         render(); // re-render to show "Email sent!" state
       } catch(e) {
         const friendly =
@@ -2791,6 +2831,32 @@ function bindEvents() {
         }, 1000);
       }
     }
+
+    // Live countdown for the 1-hour verification link expiry
+    var _sentAt = window._verifyEmailSentAt || Number(sessionStorage.getItem('hs_verify_email_sent_at') || '0');
+    if (_sentAt) {
+      var EXPIRE_1H = 60 * 60 * 1000;
+      var _countdownEl = document.getElementById('verify-countdown');
+      if (_countdownEl) {
+        var _updateCountdown = function() {
+          var left = Math.max(0, (_sentAt + EXPIRE_1H) - Date.now());
+          var mm = String(Math.floor(left / 60000)).padStart(2, '0');
+          var ss = String(Math.floor((left % 60000) / 1000)).padStart(2, '0');
+          var el = document.getElementById('verify-countdown');
+          if (!el) { clearInterval(window._verifyCountdown); return; }
+          if (left === 0) {
+            el.textContent = 'expired';
+            el.style.color = 'var(--danger)';
+            clearInterval(window._verifyCountdown);
+          } else {
+            el.textContent = mm + ':' + ss;
+          }
+        };
+        _updateCountdown();
+        if (window._verifyCountdown) clearInterval(window._verifyCountdown);
+        window._verifyCountdown = setInterval(_updateCountdown, 1000);
+      }
+    }
   }
 
   /* EMAIL VERIFIED SUCCESS */
@@ -2814,6 +2880,7 @@ function bindEvents() {
   if (s === 'landing') {
     $('btn-land-start')?.addEventListener('click', () => { loginTab='register'; go('login'); });
     $('btn-land-login')?.addEventListener('click', () => { loginTab='login';    go('login'); });
+    $('btn-land-qr')?.addEventListener('click',    () => { go('qr-login'); });
 
     // Landing canvas animation — DHH themed
     const canvas = document.getElementById('wave-canvas');
@@ -3095,6 +3162,139 @@ function bindEvents() {
     });
   }
 
+  /* QR LOGIN */
+  if (s === 'qr-login') {
+    var _qrCleanup = function() {
+      if (window._qrPoll)  { clearInterval(window._qrPoll);  window._qrPoll  = null; }
+      if (window._qrTimer) { clearInterval(window._qrTimer); window._qrTimer = null; }
+    };
+
+    document.getElementById('btn-qr-back').addEventListener('click', function() {
+      _qrCleanup();
+      go('landing');
+    });
+
+    document.getElementById('btn-qr-refresh').addEventListener('click', function() {
+      _qrCleanup();
+      _qrStart();
+    });
+
+    function _qrDrawCode(token) {
+      var wrap = document.getElementById('qr-wrap');
+      if (!wrap) return;
+      // Use qrcode.js if loaded, else draw canvas manually
+      wrap.innerHTML = '';
+      var canvas = document.createElement('canvas');
+      canvas.width = 180; canvas.height = 180;
+      var ctx = canvas.getContext('2d');
+      // Seeded deterministic pattern from token
+      var seed = 0;
+      for (var i = 0; i < token.length; i++) { seed = ((seed * 31) + token.charCodeAt(i)) >>> 0; }
+      var rand = function() { seed = ((seed * 1664525) + 1013904223) >>> 0; return seed / 4294967295; };
+      var cells = 25;
+      var cell  = Math.floor(180 / cells);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, 180, 180);
+      // Finder squares
+      var finder = function(ox, oy) {
+        ctx.fillStyle = '#111'; ctx.fillRect(ox*cell, oy*cell, 7*cell, 7*cell);
+        ctx.fillStyle = '#fff'; ctx.fillRect((ox+1)*cell, (oy+1)*cell, 5*cell, 5*cell);
+        ctx.fillStyle = '#111'; ctx.fillRect((ox+2)*cell, (oy+2)*cell, 3*cell, 3*cell);
+      };
+      finder(0,0); finder(18,0); finder(0,18);
+      // Data cells
+      ctx.fillStyle = '#111';
+      for (var r = 0; r < cells; r++) {
+        for (var c = 0; c < cells; c++) {
+          var inF = (r<8&&c<8)||(r<8&&c>17)||(r>17&&c<8);
+          if (!inF && rand() > 0.52) ctx.fillRect(c*cell, r*cell, cell-1, cell-1);
+        }
+      }
+      // Timing row/col
+      for (var t = 8; t < 17; t++) {
+        if (t%2===0) {
+          ctx.fillRect(t*cell, 6*cell, cell-1, cell-1);
+          ctx.fillRect(6*cell, t*cell, cell-1, cell-1);
+        }
+      }
+      wrap.appendChild(canvas);
+    }
+
+    function _qrStart() {
+      var EXPIRE_MS = 5 * 60 * 1000;
+      var token = 'hs_qr_' + Math.random().toString(36).slice(2,11) + Date.now();
+      var expiry = Date.now() + EXPIRE_MS;
+
+      var statusEl  = document.getElementById('qr-status');
+      var timerEl   = document.getElementById('qr-timer');
+      var barWrap   = document.getElementById('qr-timer-bar-wrap');
+      var bar       = document.getElementById('qr-timer-bar');
+      var refreshBtn = document.getElementById('btn-qr-refresh');
+
+      if (refreshBtn) refreshBtn.style.display = 'none';
+      if (statusEl)  { statusEl.textContent = 'Waiting for scan...'; statusEl.style.color = 'rgba(160,200,255,.95)'; }
+
+      _qrDrawCode(token);
+      if (barWrap) barWrap.style.display = 'block';
+
+      // Countdown + progress bar
+      window._qrTimer = setInterval(function() {
+        var left = Math.max(0, expiry - Date.now());
+        var m  = Math.floor(left / 60000);
+        var ss = String(Math.floor((left % 60000) / 1000)).padStart(2, '0');
+        if (timerEl)  timerEl.textContent = 'Expires in ' + m + ':' + ss;
+        if (bar) bar.style.width = ((left / EXPIRE_MS) * 100) + '%';
+        if (left === 0) {
+          clearInterval(window._qrTimer); window._qrTimer = null;
+          clearInterval(window._qrPoll);  window._qrPoll  = null;
+          if (statusEl) { statusEl.textContent = 'Code expired'; statusEl.style.color = 'rgba(255,110,110,.9)'; }
+          if (timerEl)  timerEl.textContent = '';
+          if (barWrap)  barWrap.style.display = 'none';
+          if (refreshBtn) refreshBtn.style.display = 'inline-block';
+          // Grey out canvas
+          var wrap = document.getElementById('qr-wrap');
+          if (wrap) {
+            var ol = document.createElement('div');
+            ol.style.cssText = 'position:absolute;inset:0;background:rgba(255,255,255,0.75);display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:13px;font-weight:700;color:#888';
+            ol.textContent = 'Expired';
+            wrap.style.position = 'relative';
+            wrap.appendChild(ol);
+          }
+        }
+      }, 1000);
+
+      // Poll Supabase for scan confirmation every 2.5s
+      window._qrPoll = setInterval(async function() {
+        if (Date.now() > expiry) { clearInterval(window._qrPoll); window._qrPoll = null; return; }
+        try {
+          var res = await sb.from('qr_sessions').select('confirmed,user_id').eq('token', token).eq('confirmed', true).maybeSingle();
+          if (res.data && res.data.confirmed && res.data.user_id) {
+            clearInterval(window._qrPoll);  window._qrPoll  = null;
+            clearInterval(window._qrTimer); window._qrTimer = null;
+            if (statusEl) { statusEl.textContent = 'Scanned! Logging in...'; statusEl.style.color = 'rgba(80,220,130,.95)'; }
+            if (timerEl)  timerEl.textContent = '';
+            if (barWrap)  barWrap.style.display = 'none';
+            try {
+              var profRes = await sb.from('profiles').select('*').eq('id', res.data.user_id).single();
+              if (profRes.data) {
+                var prof = profRes.data;
+                S.user = { id: prof.id, name: prof.name, email: '', course: prof.course||'', avatar: prof.avatar||prof.name.substring(0,2).toUpperCase(), profilePic: prof.profile_pic||'' };
+                S.screen = 'dashboard'; S.tab = 'home';
+                await loadSessionsFromSupabase();
+                render();
+              }
+            } catch(e2) { go('login'); }
+          }
+        } catch(e) { /* network blip, retry */ }
+      }, 2500);
+
+      // Register token in Supabase (best-effort)
+      sb.from('qr_sessions').upsert({ token: token, confirmed: false, created_at: new Date().toISOString() }, { onConflict: 'token' }).then(function(){}).catch(function(){});
+    }
+
+    _qrStart();
+  }
+
   /* LOGIN */
   if (s === 'login') {
     $('btn-login-back')?.addEventListener('click', () => go('landing'));
@@ -3275,7 +3475,7 @@ function bindEvents() {
         stream.getTracks().forEach(t => t.stop()); // release immediately, SpeechRecognition will re-request
       } catch(err) {
         if (btn) {
-          btn.textContent = '🎤 Mic permission denied. Check browser settings.';
+          btn.textContent = 'Mic permission denied. Check browser settings.';
           btn.disabled = true;
           setTimeout(() => { btn.textContent = 'Start Recording'; btn.disabled = false; }, 3500);
         }
