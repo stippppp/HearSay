@@ -795,85 +795,6 @@
     .del-btn:active { transform: scale(.98); }
     .del-btn svg { stroke: var(--danger); width: 15px; height: 15px; }
 
-    /* ── Subject Folders ── */
-    .folder-card {
-      background: var(--card); border-radius: var(--radius);
-      box-shadow: var(--shadow-card); overflow: hidden;
-      cursor: pointer; transition: background .12s;
-    }
-    .folder-card:hover { background: #f4f8fd; }
-    .folder-card:active { transform: scale(.98); }
-    .folder-header {
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px;
-    }
-    .folder-icon {
-      width: 40px; height: 40px; border-radius: 12px;
-      background: var(--primary-muted); flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .folder-icon svg { stroke: var(--primary); width: 20px; height: 20px; }
-    .folder-name { font-size: 15px; font-weight: 700; color: var(--text); }
-    .folder-count { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-    .folder-chevron { margin-left: auto; }
-    .folder-chevron svg { stroke: var(--text-muted); width: 18px; height: 18px; }
-
-    /* ── Flashcards ── */
-    .fc-screen {
-      flex: 1; display: flex; flex-direction: column;
-      padding: 16px 20px 80px; gap: 16px; overflow-y: auto;
-    }
-    .fc-progress {
-      display: flex; align-items: center; gap: 10px;
-    }
-    .fc-bar { flex: 1; height: 5px; border-radius: 4px; background: var(--border); overflow: hidden; }
-    .fc-bar-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width .3s; }
-    .fc-counter { font-size: 12px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
-    .fc-card-wrap {
-      flex: 1; min-height: 240px; max-height: 340px;
-      perspective: 1000px; cursor: pointer;
-    }
-    .fc-card-inner {
-      position: relative; width: 100%; height: 100%;
-      transition: transform .5s; transform-style: preserve-3d;
-    }
-    .fc-card-inner.flipped { transform: rotateY(180deg); }
-    .fc-front, .fc-back {
-      position: absolute; inset: 0;
-      background: var(--card); border-radius: var(--radius);
-      box-shadow: var(--shadow-card); padding: 20px;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      backface-visibility: hidden; -webkit-backface-visibility: hidden;
-      text-align: center;
-    }
-    .fc-back { transform: rotateY(180deg); background: var(--primary-muted); }
-    .fc-label {
-      font-size: 10px; font-weight: 800; letter-spacing: .12em;
-      text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
-    }
-    .fc-back .fc-label { color: var(--primary); }
-    .fc-text {
-      font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.6;
-    }
-    .fc-back .fc-text { color: var(--primary); font-size: 14px; }
-    .fc-hint { font-size: 11px; color: var(--text-muted); margin-top: 14px; font-style: italic; }
-    .fc-nav { display: flex; gap: 10px; }
-    .fc-btn {
-      flex: 1; padding: 13px; border-radius: var(--radius);
-      font-family: var(--font); font-size: 14px; font-weight: 700;
-      border: 1.5px solid var(--border); background: var(--card);
-      color: var(--primary); cursor: pointer; transition: background .12s;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .fc-btn:hover { background: var(--bg); }
-    .fc-btn:active { transform: scale(.97); }
-    .fc-btn.primary { background: var(--grad); color: #fff; border: none; box-shadow: var(--shadow-btn); }
-    .fc-btn.primary:hover { opacity: .92; }
-    .fc-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 0; }
-    .fc-loading span { font-size: 13px; color: var(--text-muted); font-weight: 600; }
-    .fc-empty { text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 14px; line-height: 1.7; }
-
     .del-confirm {
       position: fixed; inset: 0; z-index: 300;
       background: rgba(0,0,0,.45);
@@ -1352,12 +1273,6 @@
   <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
   </symbol>
-  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-  </symbol>
-  <symbol id="i-cards" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
-  </symbol>
 </svg>
 
 <script>
@@ -1738,7 +1653,7 @@ function openMenuDrawer() {
 function go(screen, opts={}) {
   if (window._waveCleanup) { window._waveCleanup(); window._waveCleanup = null; }
   // Clear notes search when leaving notes screen
-  if (S.screen === 'summaries' && screen !== 'summaries') { notesSearchQuery = ''; openFolderSubject = null; }
+  if (S.screen === 'summaries' && screen !== 'summaries') notesSearchQuery = '';
   S.prevScreen = S.screen;
   S.screen = screen;
   if (opts.tab !== undefined) S.tab = opts.tab;
@@ -1765,7 +1680,6 @@ function render() {
     'session-live':   renderSessionLive,
     'summaries':      () => renderSummaries(null),
     'session-detail': () => renderSummaries(S.openSessionId),
-    'flashcards':     renderFlashcards,
     'profile':        renderProfile,
     'settings':       renderSettings,
   };
@@ -1776,7 +1690,7 @@ function render() {
 }
 
 function renderNav() {
-  const cur = ['summaries','session-detail','flashcards'].includes(S.screen) ? 'summaries'
+  const cur = ['summaries','session-detail'].includes(S.screen) ? 'summaries'
             : S.screen === 'settings' ? 'settings'
             : S.screen === 'profile'  ? 'profile'
             : S.tab;
@@ -2529,10 +2443,6 @@ const openCards = {};
 let notesSearchQuery = '';
 let notesSortOrder = 'newest'; // 'newest' | 'oldest' | 'subject'
 let searchDebounceTimer = null;
-let openFolderSubject = null; // null = show folders, string = show sessions of that subject
-let flashcardSession = null;  // session being reviewed as flashcards
-let flashcardIndex = 0;
-let flashcardFlipped = false;
 function sortSessions(list) {
   if (notesSortOrder === 'oldest') return [...list].reverse();
   if (notesSortOrder === 'subject') return [...list].sort((a,b) => (a.subject||'').localeCompare(b.subject||''));
@@ -2540,96 +2450,33 @@ function sortSessions(list) {
 }
 
 function renderSummaries(filterId) {
-  // ── SESSION DETAIL view ──
-  if (filterId) {
-    const allList = S.sessions.filter(s=>s.id===filterId);
-    const backBtn = `<button class="icon-btn" id="btn-sum-back">${ic('i-back',20,20)}</button>`;
-    return `<div class="screen">
-    <div class="page-header">
-      ${backBtn}
-      <span class="page-title">Session Details</span>
-      ${mobileLogos()}
-    </div>
-    <div class="summaries-body">
-      ${allList.length === 0
-        ? `<div class="empty-state"><div class="empty-icon">${ic('i-file',28,28)}</div><div class="empty-title">Not found</div></div>`
-        : allList.map(s => renderSumCard(s, true)).join('')}
-    </div>
-  </div>`;
-  }
-
-  // ── FOLDER (subject) SESSIONS view ──
-  if (openFolderSubject !== null) {
-    const folderSessions = S.sessions.filter(s => (s.subject||'').trim().toLowerCase() === openFolderSubject.trim().toLowerCase());
-    const label = folderSessions[0]?.subject || openFolderSubject;
-    return `<div class="screen">
-    <div class="page-header">
-      <button class="icon-btn" id="btn-folder-back">${ic('i-back',20,20)}</button>
-      <span class="page-title" style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${escHtml(label)}</span>
-      ${mobileLogos()}
-    </div>
-    <div class="summaries-body" id="folder-sessions-body">
-      ${folderSessions.length === 0
-        ? `<div class="empty-state"><div class="empty-icon">${ic('i-file',28,28)}</div><div class="empty-title">No sessions</div></div>`
-        : folderSessions.map(s => renderSumCard(s, false)).join('')}
-    </div>
-  </div>`;
-  }
-
-  // ── FOLDERS VIEW (default notes screen) ──
-  const allList = S.sessions;
+  const allList = filterId ? S.sessions.filter(s=>s.id===filterId) : S.sessions;
+  // Apply search filter (only on the notes list, not session detail)
   const q = notesSearchQuery.trim().toLowerCase();
-
-  // Build folders grouped by subject
-  const folderMap = {};
-  allList.forEach(s => {
-    const key = (s.subject||'Untitled').trim();
-    if (!folderMap[key]) folderMap[key] = [];
-    folderMap[key].push(s);
-  });
-  let folders = Object.entries(folderMap); // [[subject, sessions[]], ...]
-
-  // Apply search across folders
-  if (q) {
-    folders = folders.filter(([subj, sessions]) =>
-      subj.toLowerCase().includes(q) ||
-      sessions.some(s =>
+  const filtered = (!filterId && q)
+    ? allList.filter(s =>
+        (s.subject||'').toLowerCase().includes(q) ||
         (s.summary||'').toLowerCase().includes(q) ||
         (s.transcript||'').toLowerCase().includes(q) ||
         (s.date||'').toLowerCase().includes(q))
-    );
-  }
-
-  // Sort folders
-  if (notesSortOrder === 'subject') {
-    folders.sort((a,b) => a[0].localeCompare(b[0]));
-  } else if (notesSortOrder === 'oldest') {
-    folders.sort((a,b) => {
-      const aMin = Math.min(...a[1].map(s=>Number(s.id)||0));
-      const bMin = Math.min(...b[1].map(s=>Number(s.id)||0));
-      return aMin - bMin;
-    });
-  } else {
-    // newest: sort by newest session in each folder
-    folders.sort((a,b) => {
-      const aMax = Math.max(...a[1].map(s=>Number(s.id)||0));
-      const bMax = Math.max(...b[1].map(s=>Number(s.id)||0));
-      return bMax - aMax;
-    });
-  }
-
+    : allList;
+  const list = filterId ? filtered : sortSessions(filtered);
+  const backBtn = filterId
+    ? `<button class="icon-btn" id="btn-sum-back">${ic('i-back',20,20)}</button>`
+    : `<div style="width:36px"></div>`;
   return `<div class="screen">
     <div class="page-header">
-      <div style="width:36px"></div>
-      <span class="page-title">My Notes</span>
+      ${backBtn}
+      <span class="page-title">${filterId ? 'Session Details' : 'My Notes'}</span>
       ${mobileLogos()}
     </div>
+    ${!filterId ? `
     <div class="notes-search-wrap">
       <div style="position:relative">
         <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;display:flex;align-items:center">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke:var(--text-muted)"><circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
         </div>
-        <input id="notes-search" class="notes-search-input${notesSearchQuery ? ' has-value' : ''}" type="search" placeholder="Search subjects or notes…" value="${escHtml(notesSearchQuery)}" autocomplete="off" />
+        <input id="notes-search" class="notes-search-input${notesSearchQuery ? ' has-value' : ''}" type="search" placeholder="Search sessions…" value="${escHtml(notesSearchQuery)}" autocomplete="off" />
         <button id="notes-search-clear" class="notes-search-clear${notesSearchQuery ? ' visible' : ''}" aria-label="Clear search" tabindex="-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -2637,180 +2484,27 @@ function renderSummaries(filterId) {
     </div>
     ${allList.length ? `
     <div class="notes-sort-wrap">
-      <p class="summary-count">${q ? folders.length + ' folder' + (folders.length!==1?'s':'') + ' match' : folders.length + ' subject' + (folders.length!==1?'s':'')} · ${allList.length} session${allList.length!==1?'s':''}</p>
+      <p class="summary-count">${q ? list.length + ' result' + (list.length!==1?'s':'') + ' of ' + allList.length : allList.length + ' session' + (allList.length!==1?'s':'')} saved</p>
       <select id="notes-sort" class="lang-select" style="font-size:12px;padding:5px 10px">
         <option value="newest"${notesSortOrder==='newest'?' selected':''}>Newest</option>
         <option value="oldest"${notesSortOrder==='oldest'?' selected':''}>Oldest</option>
         <option value="subject"${notesSortOrder==='subject'?' selected':''}>A–Z</option>
       </select>
-    </div>` : ''}
-    <div class="summaries-body" id="folders-list">
-      ${folders.length === 0 ? `
+    </div>` : ''}` : ''}
+    <div class="summaries-body">
+      ${list.length === 0 ? `
         <div class="empty-state">
-          <div class="empty-icon">${ic('i-folder',28,28)}</div>
+          <div class="empty-icon">${ic('i-file',28,28)}</div>
           <div class="empty-title">${q ? 'No results found' : 'No notes yet'}</div>
-          <div class="empty-sub">${q ? `No subjects match "<strong>${escHtml(q)}</strong>".` : 'Complete a recording session to see your subjects here.'}</div>
+          <div class="empty-sub">${q ? `No sessions match "<strong>${escHtml(q)}</strong>". Try a different keyword.` : 'Complete a recording session to see your transcript and summary here.'}</div>
         </div>` :
-        folders.map(([subj, sessions]) => renderFolderCard(subj, sessions)).join('')}
+        (S.showAllSessions ? list : list.slice(0,10)).map(s => renderSumCard(s, !!filterId)).join('') +
+        (!filterId && list.length > 10 ? `
+          <button id="btn-show-all" style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:none;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:700;color:var(--primary);cursor:pointer;font-family:var(--font);margin-top:4px">
+            ${S.showAllSessions ? 'Show less' : 'Show all ' + list.length + ' sessions'}
+          </button>` : '')}
     </div>
   </div>`;
-}
-
-/* ── FOLDER CARD ── */
-function renderFolderCard(subject, sessions) {
-  const count = sessions.length;
-  const latest = sessions[0];
-  return `<div class="folder-card" data-folder="${escHtml(subject)}">
-    <div class="folder-header">
-      <div class="folder-icon">${ic('i-folder',20,20)}</div>
-      <div style="flex:1;min-width:0">
-        <div class="folder-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(subject)}</div>
-        <div class="folder-count">${count} session${count!==1?'s':''} · Last: ${escHtml(latest?.date||'—')}</div>
-      </div>
-      <div class="folder-chevron">${ic('i-chevron-r',18,18)}</div>
-    </div>
-  </div>`;
-}
-
-/* ── FLASHCARD SCREEN ── */
-function renderFlashcards() {
-  const sess = flashcardSession;
-  if (!sess) { go('summaries'); return ''; }
-  const cards = sess._flashcards || [];
-  if (sess._flashcardsLoading) {
-    return `<div class="screen">
-      <div class="page-header">
-        <button class="icon-btn" id="btn-fc-back">${ic('i-back',20,20)}</button>
-        <span class="page-title">Flashcards</span>
-        ${mobileLogos()}
-      </div>
-      <div class="fc-screen">
-        <div class="fc-loading">
-          <div class="spinner" style="width:28px;height:28px;border-width:3px"></div>
-          <span>Generating flashcards from your notes…</span>
-        </div>
-      </div>
-    </div>`;
-  }
-  if (!cards.length) {
-    return `<div class="screen">
-      <div class="page-header">
-        <button class="icon-btn" id="btn-fc-back">${ic('i-back',20,20)}</button>
-        <span class="page-title">Flashcards</span>
-        ${mobileLogos()}
-      </div>
-      <div class="fc-screen">
-        <div class="fc-empty">
-          No flashcards could be generated.<br>This session may not have enough content.
-        </div>
-      </div>
-    </div>`;
-  }
-  const idx = Math.min(flashcardIndex, cards.length - 1);
-  const card = cards[idx];
-  const pct = ((idx + 1) / cards.length * 100).toFixed(0);
-  return `<div class="screen">
-    <div class="page-header">
-      <button class="icon-btn" id="btn-fc-back">${ic('i-back',20,20)}</button>
-      <span class="page-title" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${escHtml(sess.subject)} – Cards</span>
-      ${mobileLogos()}
-    </div>
-    <div class="fc-screen">
-      <div class="fc-progress">
-        <div class="fc-bar"><div class="fc-bar-fill" style="width:${pct}%"></div></div>
-        <span class="fc-counter">${idx+1} / ${cards.length}</span>
-      </div>
-      <div class="fc-card-wrap" id="fc-card-wrap">
-        <div class="fc-card-inner${flashcardFlipped?' flipped':''}" id="fc-inner">
-          <div class="fc-front">
-            <div class="fc-label">Question</div>
-            <div class="fc-text">${escHtml(card.q)}</div>
-            <div class="fc-hint">Tap card to reveal answer</div>
-          </div>
-          <div class="fc-back">
-            <div class="fc-label">Answer</div>
-            <div class="fc-text">${escHtml(card.a)}</div>
-          </div>
-        </div>
-      </div>
-      <div class="fc-nav">
-        ${idx > 0 ? `<button class="fc-btn" id="fc-prev">${ic('i-back',16,16)} Prev</button>` : `<div style="flex:1"></div>`}
-        ${idx < cards.length - 1
-          ? `<button class="fc-btn primary" id="fc-next">Next ${ic('i-chevron-r',16,16)}</button>`
-          : `<button class="fc-btn primary" id="fc-done">Done ✓</button>`}
-      </div>
-      <div style="text-align:center;padding:4px 0">
-        <span style="font-size:11px;color:var(--text-muted)">${cards.length} card${cards.length!==1?'s':''} generated from key phrases & summary</span>
-      </div>
-    </div>
-  </div>`;
-}
-
-/* ── FLASHCARD GENERATOR ── */
-async function generateFlashcards(session) {
-  if (session._flashcards) { // already done
-    flashcardSession = session;
-    flashcardIndex = 0;
-    flashcardFlipped = false;
-    go('flashcards');
-    return;
-  }
-  session._flashcardsLoading = true;
-  flashcardSession = session;
-  flashcardIndex = 0;
-  flashcardFlipped = false;
-  go('flashcards');
-
-  const phrases = (session.keyPhrases || []).join(', ');
-  const summary = (session.summary || '').substring(0, 600);
-  const transcript = (session.transcript || '').substring(0, 800);
-
-  try {
-    const res = await fetch('https://api.cohere.com/v2/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${COHERE_KEY}` },
-      body: JSON.stringify({
-        model: 'command-r-08-2024',
-        messages: [{
-          role: 'user',
-          content: `You are a study flashcard generator. Based on this classroom session, generate 6–10 Q&A flashcards.
-
-Subject: ${session.subject}
-Key Phrases: ${phrases}
-Summary: ${summary}
-Transcript excerpt: ${transcript}
-
-Return ONLY a valid JSON array, no extra text, no markdown, no backticks. Format:
-[{"q":"Question here","a":"Answer here"},{"q":"...","a":"..."}]
-
-Make questions concise and answers clear. Cover key concepts from the session.`
-        }]
-      })
-    });
-    const data = await res.json();
-    const raw = data?.message?.content?.[0]?.text?.trim() || '';
-    // Strip any markdown fences
-    const clean = raw.replace(/^```[a-z]*\n?/i,'').replace(/```$/,'').trim();
-    const parsed = JSON.parse(clean);
-    if (Array.isArray(parsed) && parsed.length) {
-      session._flashcards = parsed.filter(c => c.q && c.a);
-    } else throw new Error('empty');
-  } catch(e) {
-    // Fallback: build from key phrases + summary sentences
-    const cards = [];
-    const ph = session.keyPhrases || [];
-    if (session.summary) {
-      cards.push({ q: `What is the main topic of the "${session.subject}" session?`, a: session.summary.split('.')[0] + '.' });
-    }
-    ph.slice(0,5).forEach(p => {
-      cards.push({ q: `What is "${p}" in the context of ${session.subject}?`, a: `"${p}" is a key concept discussed in the ${session.subject} session.` });
-    });
-    if (session.duration) cards.push({ q: `How long was the ${session.subject} session?`, a: `The session lasted ${session.duration}.` });
-    session._flashcards = cards.length ? cards : [{ q: `What was covered in ${session.subject}?`, a: session.summary || session.transcript?.substring(0,120) || 'No content captured.' }];
-  }
-
-  session._flashcardsLoading = false;
-  if (S.screen === 'flashcards') render();
 }
 
 /* ── NOTES: update list in-place (no full re-render) to prevent search stutter ── */
@@ -2927,14 +2621,6 @@ function rebindCardEvents() {
       win.document.close();
     })
   );
-  document.querySelectorAll('[data-flashcard-id]').forEach(b =>
-    b.addEventListener('click', e => {
-      e.stopPropagation();
-      const sess = S.sessions.find(s => s.id === b.dataset.flashcardId);
-      if (!sess) return;
-      generateFlashcards(sess);
-    })
-  );
   $('btn-show-all')?.addEventListener('click', e => {
     e.stopPropagation();
     S.showAllSessions = !S.showAllSessions;
@@ -2983,7 +2669,7 @@ function renderSumCard(s, forceOpen=false) {
                 ${s.keyPhrases.map(p=>`<span class="chip chip-primary">${escHtml(p)}</span>`).join('')}
               </div>
             </div>` : ''}
-          <div class="sum-actions" style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <div class="sum-actions" style="display:flex;gap:6px;margin-top:10px">
             <button class="action-btn-sm" data-copy-text="${c.tab==='summary' ? escHtml(s.summary||'') : escHtml(s.transcript||'')}" data-copy-id="${escHtml(s.id)}">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               Copy
@@ -2994,10 +2680,6 @@ function renderSumCard(s, forceOpen=false) {
             <button class="action-btn-sm" data-export-pdf-id="${escHtml(s.id)}">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
               Export PDF
-            </button>
-            <button class="action-btn-sm" data-flashcard-id="${escHtml(s.id)}" style="background:var(--primary-muted);border-color:transparent;color:var(--primary)">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" style="stroke:var(--primary);stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-              Flashcards
             </button>
           </div>
           <button class="del-btn" data-delete="${escHtml(s.id)}">${ic('i-trash',15,15)} Delete this session</button>
@@ -4026,18 +3708,6 @@ function bindEvents() {
       if (S.prevScreen === 'summaries') go('summaries',{tab:'summaries'});
       else go('dashboard',{tab:'home'});
     });
-    // Folder back button
-    $('btn-folder-back')?.addEventListener('click', () => {
-      openFolderSubject = null;
-      render();
-    });
-    // Folder cards
-    document.querySelectorAll('[data-folder]').forEach(card => {
-      card.addEventListener('click', () => {
-        openFolderSubject = card.dataset.folder;
-        render();
-      });
-    });
     rebindCardEvents();
     // Search bar — debounced, update only the notes list in-place (no full re-render) to prevent layout stutter
     const searchInput = $('notes-search');
@@ -4046,7 +3716,7 @@ function bindEvents() {
         notesSearchQuery = e.target.value;
         S.showAllSessions = false;
         clearTimeout(searchDebounceTimer);
-        searchDebounceTimer = setTimeout(() => render(), 150);
+        searchDebounceTimer = setTimeout(() => updateNotesListInPlace(), 150);
         // Sync the clear button immediately (no debounce needed for button visibility)
         const clearBtn = $('notes-search-clear');
         if (clearBtn) clearBtn.classList.toggle('visible', !!notesSearchQuery);
@@ -4061,7 +3731,7 @@ function bindEvents() {
         S.showAllSessions = false;
         const el = $('notes-search');
         if (el) { el.value = ''; el.focus(); }
-        render();
+        updateNotesListInPlace();
       });
     }
     // Sort dropdown
@@ -4069,38 +3739,9 @@ function bindEvents() {
     if (sortSel) {
       sortSel.addEventListener('change', e => {
         notesSortOrder = e.target.value;
-        render();
+        updateNotesListInPlace();
       });
     }
-  }
-
-  /* FLASHCARDS */
-  if (s === 'flashcards') {
-    $('btn-fc-back')?.addEventListener('click', () => {
-      flashcardSession = null;
-      go('summaries', {tab:'summaries'});
-    });
-    $('fc-card-wrap')?.addEventListener('click', () => {
-      flashcardFlipped = !flashcardFlipped;
-      const inner = $('fc-inner');
-      if (inner) inner.classList.toggle('flipped', flashcardFlipped);
-    });
-    $('fc-prev')?.addEventListener('click', () => {
-      flashcardIndex = Math.max(0, flashcardIndex - 1);
-      flashcardFlipped = false;
-      render();
-    });
-    $('fc-next')?.addEventListener('click', () => {
-      if (flashcardSession && flashcardSession._flashcards) {
-        flashcardIndex = Math.min(flashcardSession._flashcards.length - 1, flashcardIndex + 1);
-      }
-      flashcardFlipped = false;
-      render();
-    });
-    $('fc-done')?.addEventListener('click', () => {
-      flashcardSession = null;
-      go('summaries', {tab:'summaries'});
-    });
   }
 
   /* PROFILE */
@@ -4891,9 +4532,6 @@ async function endSession() {
 
   
   if (S.screen === 'summaries' || S.screen === 'session-detail') render();
-
-  // Auto-generate flashcards in the background after summary is ready
-  setTimeout(() => { generateFlashcards(session).catch(()=>{}); }, 500);
 
   
   if (S.user?.id) {
