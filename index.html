@@ -4533,7 +4533,7 @@ async function endSession() {
   
   if (S.screen === 'summaries' || S.screen === 'session-detail') render();
 
-  
+  // Save AFTER summary is fully ready so it's never stored blank
   if (S.user?.id) {
     sb.from('sessions').insert({
       id:          session.id,
@@ -4546,6 +4546,7 @@ async function endSession() {
       key_phrases: session.keyPhrases,
     }).then(({ error }) => {
       if (error) console.warn('Failed to save session:', error.message);
+      else if (S.screen === 'summaries' || S.screen === 'session-detail') render();
     });
   }
 }
@@ -4778,6 +4779,7 @@ async function continueInit() {
       if (S.screen === 'email-verified' || S.screen === 'verify-email') return;
       S.user = null; S.sessions = [];
       go('landing');
+      showToast('Session expired. Please log in again.', 'error');
     }
   });
 
